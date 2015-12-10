@@ -11,11 +11,12 @@
         "https://www.reddit.com/r/hearthstone/comments/*"
       ],
       "js": [
-        "underscore.js",
+        "vendor/q.js",
+        "vendor/underscore.js",
         "HSLParser.js",
         "HSLModel.js",
         "HSLServices.js",
-        "HSL"
+        "api/HSAPI.js",
         "HSLibrary.js"
       ],
       "run_at": "document_end"

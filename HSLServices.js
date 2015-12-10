@@ -1,12 +1,14 @@
 'use strict';
 
-var HSLServices = (function(HSLAPI) {
+var HSLServices = (function(HSAPI) {
 
     var HSLService = function() {
 
+        this.key = HSAPI.key;
 
+        this.urlPrefix = HSAPI.urlPrefix;
     };
-    _.extend(HSLService.prototype, {
+    _.extend(HSLServices.prototype, {
 
         ///**
         // * Query list of buildings
