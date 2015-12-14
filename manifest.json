@@ -19,6 +19,9 @@
         "HSLServices.js",
         "HSLibrary.js"
       ],
+      "css": [
+        "HSL.css"
+      ],
       "run_at": "document_end"
     }
   ],

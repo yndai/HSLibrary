@@ -10,8 +10,22 @@ var HSLServices = (function(HSAPI) {
     };
     _.extend(HSService.prototype, {
 
+        querySingleCard: function(name) {
+
+            return this._makeXHRGet(
+                this.URL_PREFIX + 'cards/' + name,
+                {
+                    'X-Mashape-Key': this.KEY
+                },
+                {
+                    'collectible': 1
+                }
+            );
+
+        },
+
         /**
-         * Query all collectible cards
+         * Query all collectible cards (large size & slow)
          * @returns promise
          */
         queryAllCards: function() {
@@ -66,9 +80,9 @@ var HSLServices = (function(HSAPI) {
             xhr.onreadystatechange = function(e) {
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
-                        defer.resolve(xhr.responseText);
+                        defer.resolve(xhr.response);
                     } else {
-                        defer.fail(xhr.statusText);
+                        defer.reject(xhr.statusText);
                     }
                 }
             };
