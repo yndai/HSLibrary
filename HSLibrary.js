@@ -10,4 +10,17 @@
 
     document.HSL_parser = parser;
 
+    var service = new HSLServices.HSService();
+
+    //TODO: need to organize data from AllCards: cards are organized by card set!!
+
+    service.queryAllCards()
+        .then(function(data) {
+            console.log(JSON.stringify(data));
+        })
+        .fail(function(error) {
+            alert('Failed to retrieve data');
+            console.log(error);
+        });
+
 })(HSLModel);

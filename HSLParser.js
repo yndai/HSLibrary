@@ -88,10 +88,12 @@ var HSLParser = (function() {
 
                 _.each(this._commentNodeList, function(commentNode) {
 
-                    commentNode.innerHTML = commentNode.innerHTML
-                        .replace(CARD_REQUEST_REGEX, function(match) {
-                            return "<span class='hsl-card-request'>" + match + "</span>";
-                        });
+                    if (commentNode.innerHTML) {
+                        commentNode.innerHTML = commentNode.innerHTML
+                            .replace(CARD_REQUEST_REGEX, function (match) {
+                                return "<span class='hsl-card-request'>" + match + "</span>";
+                            });
+                    }
 
                 });
 
@@ -119,7 +121,7 @@ var HSLParser = (function() {
 
                     if (matches.length > 0) {
 
-                        console.log(commentNode.innerText + " %% " + JSON.stringify(matches));
+                        //console.log(commentNode.innerText + " %% " + JSON.stringify(matches));
 
                         this._commentNodeList.push(new CommentNode(commentNode,  matches));
 

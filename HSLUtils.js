@@ -2,6 +2,9 @@
 
 var HSLUtils = (function() {
 
+    /*
+        ----- Generic LRU Cache -----
+     */
 
     var CacheEntry = function(key, value, newer, older) {
 
@@ -149,6 +152,10 @@ var HSLUtils = (function() {
         }
 
     });
+
+    /*
+        ----- Other Utility Methods -----
+     */
 
 
     return {

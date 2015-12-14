@@ -2,61 +2,90 @@
 
 var HSLServices = (function(HSAPI) {
 
-    var HSLService = function() {
+    var HSService = function() {
 
-        this.key = HSAPI.key;
+        this.KEY = HSAPI.key;
+        this.URL_PREFIX = HSAPI.urlPrefix;
 
-        this.urlPrefix = HSAPI.urlPrefix;
     };
-    _.extend(HSLServices.prototype, {
+    _.extend(HSService.prototype, {
 
-        ///**
-        // * Query list of buildings
-        // * @returns {*|promise}
-        // */
-        //queryBuildings: function() {
-        //    var self = this;
-        //    var deferred = Q.defer();
-        //
-        //    $.get(self.urlPrefix + '/buildings/list.json', {key: self.key})
-        //        .done(function(response) {
-        //            deferred.resolve(response.data);
-        //        })
-        //        .fail(function(response) {
-        //            deferred.reject(response.statusText);
-        //        });
-        //
-        //    return deferred.promise;
-        //},
-        //
-        ///**
-        // * Query details of a single building
-        // * @param buildingCode
-        // * @returns {*|promise}
-        // */
-        //getBuilding: function(buildingCode) {
-        //    var self = this;
-        //    var deferred = Q.defer();
-        //
-        //    $.get(self.urlPrefix + '/buildings/' + buildingCode + '.json', {key: self.key})
-        //        .done(function(response) {
-        //            deferred.resolve(response.data);
-        //        })
-        //        .fail(function() {
-        //            deferred.reject();
-        //        });
-        //
-        //    return deferred.promise;
-        //}
+        /**
+         * Query all collectible cards
+         * @returns promise
+         */
+        queryAllCards: function() {
+
+            return this._makeXHRGet(
+                this.URL_PREFIX + 'cards',
+                {
+                    'X-Mashape-Key': this.KEY
+                },
+                {
+                    'collectible': 1,
+                    'cost': 0
+                }
+            );
+ 
+        },
+
+        /**
+         * Initiates a Get XHR and returns a promise
+         * @param url
+         * @param headers
+         * @param data
+         * @returns promise
+         * @private
+         */
+        _makeXHRGet: function(url, headers, data) {
+
+            var defer = Q.defer();
+            var xhr = new XMLHttpRequest();
+            var params = '';
+
+            // construct parameter string
+            var firstData = true;
+            _.each(data, function(val, key) {
+                if (firstData) {
+                    params += '?';
+                    firstData = false;
+                } else {
+                    params += '&';
+                }
+                params += key + '=' + val;
+            });
+
+            xhr.open('get', url + params);
+
+            // set request headers
+            _.each(headers, function(val, key) {
+                xhr.setRequestHeader(key, val);
+            });
+
+            // set callback
+            xhr.onreadystatechange = function(e) {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        defer.resolve(xhr.responseText);
+                    } else {
+                        defer.fail(xhr.statusText);
+                    }
+                }
+            };
+
+            xhr.send(params);
+
+            return defer.promise;
+        }
 
     });
 
 
     return {
 
-        UWaterlooService: UWaterlooService
+        HSService: HSService
 
     };
 
-})();
+})(HSAPI);
 

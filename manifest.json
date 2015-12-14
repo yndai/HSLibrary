@@ -13,10 +13,10 @@
       "js": [
         "vendor/q.js",
         "vendor/underscore.js",
+        "api/HSAPI.js",
         "HSLParser.js",
         "HSLModel.js",
         "HSLServices.js",
-        "api/HSAPI.js",
         "HSLibrary.js"
       ],
       "run_at": "document_end"
