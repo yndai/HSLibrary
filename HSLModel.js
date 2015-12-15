@@ -3,6 +3,7 @@
 var HSLModel = (function() {
 
     /**
+     * Generic listenable model
      *
      * @constructor
      */
@@ -13,6 +14,7 @@ var HSLModel = (function() {
 
         /**
          * Add a listener if not already added
+         *
          * @param listener
          */
         addListener: function(listener) {
@@ -27,6 +29,7 @@ var HSLModel = (function() {
 
         /**
          * Remove a listener if it exists
+         *
          * @param listener
          */
         removeListener: function(listener) {
