@@ -1,6 +1,6 @@
 'use strict';
 
-var HSLModel = (function() {
+var HSLModels = (function() {
 
     /**
      * Generic listenable model

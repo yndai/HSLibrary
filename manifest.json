@@ -18,6 +18,7 @@
         "HSLParser.js",
         "HSLModel.js",
         "HSLServices.js",
+        "HSLView.js",
         "HSLibrary.js"
       ],
       "css": [

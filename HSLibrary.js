@@ -1,68 +1,31 @@
 'use strict';
 
 (function HSLibraryInit(
-    cache,
     parser,
     services,
-    model
+    views,
+    models
 ) {
 
     document.body.style.backgroundColor = "yellow";
 
-    var commentParser = new parser.CommentParser();
+    var commentsParser = new parser.CommentParser();
 
-    commentParser.parse();
+    var commentsModel = new models.CommentsModel();
 
-    var service = new services.HSService();
+    var hsService = new services.HSService();
 
-    //TODO: need to organize data from AllCards: cards are organized by card set!!
+    var commentsView = new views.CommentsView(commentsModel, commentsParser, hsService);
 
-    //service.querySingleCard('Loatheb')
-    //    .then(function(data) {
-    //        console.log(JSON.stringify(data));
-    //    })
-    //    .fail(function(error) {
-    //        alert('Failed to retrieve data');
-    //        console.log(error);
-    //    });
+    commentsView.init();
 
-    var cardRequests = document.querySelectorAll('.hsl-card-request');
-
-    _.each(cardRequests, function(cardRequest) {
-
-        cardRequest.addEventListener('mouseover', function(e) {
-
-            var cardName = cardRequest.getAttribute('data-card');
-
-            var cardData = null;
-
-            if (cardData = cache.getCard(cardName)) {
-
-                console.log('from cache');
-                console.log(JSON.stringify(cardData));
-
-            } else {
-
-                service.querySingleCard(cardName)
-                    .then(function(data) {
-                        if (data) {
-                            HSLCache.addCard(cardName, JSON.parse(data));
-                            console.log(data);
-                        }
-                    })
-                    .fail(function(error){
-                        console.log('card not found');
-                    });
-
-            }
+    //TODO: consider loading all cards at once (comment autocomplete feature?)... maybe store data in local storage?
 
 
-        });
-    });
 
 })(
-    HSLCache,
     HSLParser,
     HSLServices,
-    HSLModel
+    HSLViews,
+    HSLModels
 );

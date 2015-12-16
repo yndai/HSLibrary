@@ -10,6 +10,8 @@ var HSLServices = (function(HSAPI) {
     };
     _.extend(HSService.prototype, {
 
+        // TODO: exact match? partial match?
+
         querySingleCard: function(name) {
 
             return this._makeXHRGet(
@@ -30,6 +32,8 @@ var HSLServices = (function(HSAPI) {
          */
         queryAllCards: function() {
 
+            // TODO: may not need this method...
+
             return this._makeXHRGet(
                 this.URL_PREFIX + 'cards',
                 {
@@ -48,7 +52,7 @@ var HSLServices = (function(HSAPI) {
          * @param url
          * @param headers
          * @param data
-         * @returns promise
+         * @returns {promise}
          * @private
          */
         _makeXHRGet: function(url, headers, data) {

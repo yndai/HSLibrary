@@ -79,7 +79,7 @@ var HSLParser = (function() {
         },
 
         /**
-         * Wrap comment requests as span elements
+         * Wrap comment requests & trim square brackets
          * @private
          */
         _wrapCardRequests: function() {
@@ -91,7 +91,11 @@ var HSLParser = (function() {
                     if (commentNode.element.innerHTML) {
                         commentNode.element.innerHTML = commentNode.element.innerHTML
                             .replace(CARD_REQUEST_REGEX, function (match) {
-                                return "<span class=\"hsl-card-request\" data-card=\"" + match.substr(2, match.length - 4) + "\">" + match + "</span>";
+                                // trim square brackets
+                                var trimmedName = match.substr(2, match.length - 4);
+                                return "<span class=\"hsl-card-request\" data-card=\"" + trimmedName + "\">" +
+                                            trimmedName +
+                                       "</span>";
                             });
                     }
 
@@ -121,7 +125,7 @@ var HSLParser = (function() {
 
                     if (matches.length > 0) {
 
-                        console.log(commentNode.innerText + " %% " + JSON.stringify(matches));
+                        //console.log(commentNode.innerText + " %% " + JSON.stringify(matches));
 
                         this._commentNodeList.push(new CommentNode(commentNode,  matches));
 
