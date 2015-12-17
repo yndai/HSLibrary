@@ -4,3 +4,7 @@
     text-decoration: underline;
     cursor: pointer;
 }
+
+#hsl-card-img {
+    position: absolute;
+}
