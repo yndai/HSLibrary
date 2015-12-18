@@ -38,6 +38,13 @@ var HSLViews = (function HSLView(HSLCache) {
 
         this.service = service;
 
+        // the card image popup (only 1 should exist)
+        this.cardPopupDiv = null;
+
+        // references to the bound event handlers (for removal purposes)
+        this._boundCardRequestMouseOutListener = this._cardRequestMouseOutListener.bind(this);
+        this._boundCardRequestMouseOverListener = this._cardRequestMouseOverListener.bind(this);
+
     };
     _.extend(CommentsView.prototype, BaseListenerView.prototype, {
 
@@ -63,12 +70,11 @@ var HSLViews = (function HSLView(HSLCache) {
             _.each(cardRequests, function(cardRequest) {
 
                 // set mouse event handlers (bound to this context)
-                cardRequest.addEventListener('mouseover', self._cardRequestMouseOverListener.bind(self));
-                cardRequest.addEventListener('mouseout', self._cardRequestMouseOutListener.bind(self));
+                cardRequest.addEventListener('mouseover', self._boundCardRequestMouseOverListener);
+                cardRequest.addEventListener('mouseout', self._boundCardRequestMouseOutListener);
             });
 
         },
-
 
 
         /**
@@ -79,8 +85,10 @@ var HSLViews = (function HSLView(HSLCache) {
             console.log(event);
         },
 
-        // TODO: insert a floating image @ position
-        _floatImageAtPosition: function(url, x, y) {
+        _showCardImageAtPosition: function(url, x, y) {
+
+            // remove popup if it is still visible
+            this._removeCardImage();
 
             var div = document.createElement('div');
             var img = document.createElement('img');
@@ -95,61 +103,89 @@ var HSLViews = (function HSLView(HSLCache) {
             img.style.width = "50%";
             img.style.height = "50%";
 
+            this.cardPopupDiv = div;
 
             div.appendChild(img);
             document.body.appendChild(div);
 
         },
 
-        _removeFloatingImage: function() {
+        _removeCardImage: function() {
+            if (this.cardPopupDiv) {
+                this.cardPopupDiv.parentNode.removeChild(this.cardPopupDiv);
+                this.cardPopupDiv = null;
+            }
+        },
 
-            // TODO: remove the floating image (maybe make it a class variable...)
+        _invalidateCardRequest: function(cardRequestSpan) {
+            // remove class ID & event listeners from invalid
+            // card request wrapper
+            if (cardRequestSpan) {
+                cardRequestSpan.classList.remove('hsl-card-request');
+                cardRequestSpan.removeEventListener('mouseover', this._boundCardRequestMouseOverListener);
+                cardRequestSpan.removeEventListener('mouseout', this._boundCardRequestMouseOutListener);
+            }
         },
 
         _cardRequestMouseOverListener: function(e) {
             var self = this;
-            var cardRequest = e.target;
-            var cardName = cardRequest.getAttribute('data-card');
+            var cardRequestSpan = e.target;
+            var cardName = cardRequestSpan.getAttribute('data-card');
+            // TODO: adjust coordinates based on amount of room to the left/right, etc
+            var eventCoords = [e.pageX, e.pageY];
 
             var cardData = HSLCache.getCard(cardName);
-            if (cardData) {
-                // if card data is cached, just use that
+
+            if (cardData === HSLCache.INVALID_CARD) {
+                // card is invalid e.g. name was written incorrectly
+
+                console.log('cached invalid card');
+                this._invalidateCardRequest(cardRequestSpan);
+
+            } else if (cardData) {
+                // if cached card data is valid, just use that
 
                 console.log('from cache');
                 console.log(cardData);
-
-                // TODO: adjust coordinates based on amount of room to the left/right, etc
-                self._floatImageAtPosition(cardData.img, e.pageX, e.pageY);
+                self._showCardImageAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
 
             } else {
                 // otherwise, request card data
-
                 this.service.querySingleCard(cardName)
                     .then(function(data) {
                         var cardList = JSON.parse(data);
                         if (cardList && cardList.length > 0) {
+
                             // we take the first card as the best match
+                            cardData = cardList[0];
+
                             // cache card data
                             HSLCache.addCard(cardName, cardList[0]);
+
                             console.log(data);
-                            self._floatImageAtPosition(cardList[0].img, e.pageX, e.pageY);
+
+                            // display card popup
+                            self._showCardImageAtPosition(cardList[0].img, eventCoords[0], eventCoords[1]);
+
+                        } else {
+
                         }
                     })
                     .fail(function(error){
                         console.log(error);
+                        // probably an invalid card name, cache null so we don't
+                        // send another pointless request
+                        HSLCache.addCard(cardName, HSLCache.INVALID_CARD);
+
+                        self._invalidateCardRequest(cardRequestSpan);
                     });
             }
 
         },
 
         _cardRequestMouseOutListener: function(e) {
-
             // remove the floating card image if present
-            var cardImg = document.querySelector('#hsl-card-img');
-            if (cardImg) {
-                cardImg.parentNode.removeChild(cardImg);
-            }
-
+            this._removeCardImage();
         }
 
     });
