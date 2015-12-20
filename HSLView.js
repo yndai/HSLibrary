@@ -160,6 +160,7 @@ var HSLViews = (function HSLView(HSLCache) {
 
             } else {
                 // otherwise, request card data
+                // TODO: exact name may be a bit hard... although it is case insensitive... disregard spaces??
                 self.service.querySingleCard(cardName)
                     .then(function(data) {
                         var cardList = JSON.parse(data);
