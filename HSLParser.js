@@ -4,9 +4,9 @@ var HSLParser = (function() {
 
     var COMMENT_SELECTOR = ".usertext-body > div";
 
-    var COMMENT_FILTER_REGEX = /.*\[\[(.+)\]\].*/mg;
+    var COMMENT_FILTER_REGEX = /\[\[([^\]]+)\]\]/g;
 
-    var CARD_REQUEST_REGEX = /\[\[.+\]\]/g;
+    var CARD_REQUEST_REGEX = /\[\[[^\]]+\]\]/g;
 
     /**
      * Returns list of matched capture groups
@@ -111,6 +111,7 @@ var HSLParser = (function() {
          * @private
          */
         _parseAndFilterComments: function() {
+            var self = this;
 
             this._commentNodeList = [];
 
@@ -127,11 +128,11 @@ var HSLParser = (function() {
 
                         //console.log(commentNode.innerText + " %% " + JSON.stringify(matches));
 
-                        this._commentNodeList.push(new CommentNode(commentNode,  matches));
+                        self._commentNodeList.push(new CommentNode(commentNode,  matches));
 
                     }
 
-                }, this);
+                });
 
             }
         }

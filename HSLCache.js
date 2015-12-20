@@ -137,10 +137,17 @@ var HSLCache = (function() {
 
             if (entry.newer) {
                 entry.newer.older = entry.older;
+                if (entry.newer.newer === null) {
+                    entry.newer.newer = entry;
+                }
+            } else {
+                return;
             }
 
             if (entry.older) {
                 entry.older.newer = entry.newer;
+            } else {
+                this._back = entry.newer;
             }
 
             entry.newer = null;
@@ -184,7 +191,7 @@ var HSLCache = (function() {
         INVALID_CARD: -1,
 
         // TODO: decide on a reasonable limit
-        cache: new LRUCache(5),
+        cache: new LRUCache(3),
 
         addCard: function(name, cardData) {
             this.cache.putItem(name, cardData);
@@ -195,6 +202,7 @@ var HSLCache = (function() {
         }
 
     };
+
 
     return {
 

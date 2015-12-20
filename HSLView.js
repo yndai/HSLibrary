@@ -39,7 +39,9 @@ var HSLViews = (function HSLView(HSLCache) {
         this.service = service;
 
         // the card image popup (only 1 should exist)
-        this.cardPopupDiv = null;
+        this._cardPopupDiv = null;
+        // timeout for removing the card popup
+        this._popupTimeout = null;
 
         // references to the bound event handlers (for removal purposes)
         this._boundCardRequestMouseOutListener = this._cardRequestMouseOutListener.bind(this);
@@ -103,7 +105,7 @@ var HSLViews = (function HSLView(HSLCache) {
             img.style.width = "50%";
             img.style.height = "50%";
 
-            this.cardPopupDiv = div;
+            this._cardPopupDiv = div;
 
             div.appendChild(img);
             document.body.appendChild(div);
@@ -111,17 +113,21 @@ var HSLViews = (function HSLView(HSLCache) {
         },
 
         _removeCardImage: function() {
-            if (this.cardPopupDiv) {
-                this.cardPopupDiv.parentNode.removeChild(this.cardPopupDiv);
-                this.cardPopupDiv = null;
+            if (this._cardPopupDiv) {
+                clearTimeout(this._popupTimeout);
+                this._popupTimeout = null;
+                this._cardPopupDiv.parentNode.removeChild(this._cardPopupDiv);
+                this._cardPopupDiv = null;
             }
         },
 
         _invalidateCardRequest: function(cardRequestSpan) {
-            // remove class ID & event listeners from invalid
-            // card request wrapper
+            // remove event listeners from invalid
+            // card request wrapper & mark it as invalid
             if (cardRequestSpan) {
                 cardRequestSpan.classList.remove('hsl-card-request');
+                cardRequestSpan.classList.add('hsl-card-request-invalid');
+                cardRequestSpan.title = 'Could not find this card';
                 cardRequestSpan.removeEventListener('mouseover', this._boundCardRequestMouseOverListener);
                 cardRequestSpan.removeEventListener('mouseout', this._boundCardRequestMouseOutListener);
             }
@@ -134,24 +140,27 @@ var HSLViews = (function HSLView(HSLCache) {
             // TODO: adjust coordinates based on amount of room to the left/right, etc
             var eventCoords = [e.pageX, e.pageY];
 
+            // immediately remove existing card popup
+            self._removeCardImage();
+
             var cardData = HSLCache.getCard(cardName);
 
             if (cardData === HSLCache.INVALID_CARD) {
                 // card is invalid e.g. name was written incorrectly
 
                 console.log('cached invalid card');
-                this._invalidateCardRequest(cardRequestSpan);
+                self._invalidateCardRequest(cardRequestSpan);
 
             } else if (cardData) {
                 // if cached card data is valid, just use that
 
                 console.log('from cache');
-                console.log(cardData);
+                //console.log(cardData);
                 self._showCardImageAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
 
             } else {
                 // otherwise, request card data
-                this.service.querySingleCard(cardName)
+                self.service.querySingleCard(cardName)
                     .then(function(data) {
                         var cardList = JSON.parse(data);
                         if (cardList && cardList.length > 0) {
@@ -162,7 +171,7 @@ var HSLViews = (function HSLView(HSLCache) {
                             // cache card data
                             HSLCache.addCard(cardName, cardList[0]);
 
-                            console.log(data);
+                            //console.log(data);
 
                             // display card popup
                             self._showCardImageAtPosition(cardList[0].img, eventCoords[0], eventCoords[1]);
@@ -184,8 +193,13 @@ var HSLViews = (function HSLView(HSLCache) {
         },
 
         _cardRequestMouseOutListener: function(e) {
-            // remove the floating card image if present
-            this._removeCardImage();
+            var self = this;
+            // remove the floating card image after a short delay (if present)
+            if (self._cardPopupDiv) {
+                self._popupTimeout = setTimeout(function () {
+                    self._removeCardImage();
+                }, 200);
+            }
         }
 
     });

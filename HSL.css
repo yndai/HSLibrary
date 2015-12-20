@@ -1,6 +1,12 @@
 
 .hsl-card-request {
+    font-size: 130%;
     color: limegreen;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.hsl-card-request-invalid {
+    color: darkred;
     text-decoration: underline;
     cursor: pointer;
 }
