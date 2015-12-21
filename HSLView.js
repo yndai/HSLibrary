@@ -2,6 +2,8 @@
 
 var HSLViews = (function HSLView(HSLCache) {
 
+    var HTTP_PREFIX_REGEX = /^http:\/\//i;
+
     var BaseListenerView = function(model) {
 
         this.model = model;
@@ -34,8 +36,8 @@ var HSLViews = (function HSLView(HSLCache) {
 
         // TODO: eventually store comment nodes in model & listen to comment section changes
 
+        this.model = model;
         this.parser = parser;
-
         this.service = service;
 
         // the card image popup (only 1 should exist)
@@ -47,6 +49,9 @@ var HSLViews = (function HSLView(HSLCache) {
         this._boundCardRequestMouseOutListener = this._cardRequestMouseOutListener.bind(this);
         this._boundCardRequestMouseOverListener = this._cardRequestMouseOverListener.bind(this);
 
+        // hook up model
+        this.model.addListener(this);
+
     };
     _.extend(CommentsView.prototype, BaseListenerView.prototype, {
 
@@ -56,35 +61,43 @@ var HSLViews = (function HSLView(HSLCache) {
         init: function() {
 
             // parse comment section & wrap card requests
-            this.parser.parse();
+            var commentNodes = this.parser.parse();
 
-            // attach listeners to wrapped card requests
-            this.addCardRequestListeners();
-
-        },
-
-        addCardRequestListeners: function() {
-            var self = this;
-
-            // list of wrapped card requests
-            var cardRequests = document.querySelectorAll('.hsl-card-request');
-
-            _.each(cardRequests, function(cardRequest) {
-
-                // set mouse event handlers (bound to this context)
-                cardRequest.addEventListener('mouseover', self._boundCardRequestMouseOverListener);
-                cardRequest.addEventListener('mouseout', self._boundCardRequestMouseOutListener);
-            });
+            // add comment nodes to model
+            this.model.addCommentNodes(commentNodes);
 
         },
-
 
         /**
-         * Called by model to update view
+         * Called by model to update view on data changes
          * @param event
+         * @param data
          */
-        update: function(event) {
+        update: function(event, data) {
             console.log(event);
+
+            // get a flat list of card request nodes that were
+            // inserted into the DOM by the parser
+            var cardRequestNodes = [];
+            _.each(data, function(commentNode) {
+                Array.prototype.push.apply(cardRequestNodes, _.values(commentNode.cardReqNodeMap));
+            });
+
+            // attach event listeners to request nodes
+            this._addCardRequestListeners(cardRequestNodes);
+
+        },
+
+        _addCardRequestListeners: function(cardRequestNodes) {
+            var self = this;
+
+            _.each(cardRequestNodes, function(cardRequestNode) {
+
+                // set mouse event handlers (bound to this context)
+                cardRequestNode.addEventListener('mouseover', self._boundCardRequestMouseOverListener);
+                cardRequestNode.addEventListener('mouseout', self._boundCardRequestMouseOutListener);
+            });
+
         },
 
         _showCardImageAtPosition: function(url, x, y) {
@@ -102,8 +115,8 @@ var HSLViews = (function HSLView(HSLCache) {
             img.src = url;
 
             //TODO: scale with browser size
-            img.style.width = "50%";
-            img.style.height = "50%";
+            img.style.width = "70%";
+            img.style.height = "70%";
 
             this._cardPopupDiv = div;
 
@@ -169,13 +182,17 @@ var HSLViews = (function HSLView(HSLCache) {
                             // we take the first card as the best match
                             cardData = cardList[0];
 
+                            // replace card img url with https equivalent
+                            // TODO: reaally need this?
+                            cardData.img = cardData.img.replace(HTTP_PREFIX_REGEX, 'https://');
+
                             // cache card data
-                            HSLCache.addCard(cardName, cardList[0]);
+                            HSLCache.addCard(cardName, cardData);
 
                             //console.log(data);
 
                             // display card popup
-                            self._showCardImageAtPosition(cardList[0].img, eventCoords[0], eventCoords[1]);
+                            self._showCardImageAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
 
                         } else {
 

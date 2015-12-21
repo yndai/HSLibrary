@@ -191,7 +191,7 @@ var HSLCache = (function() {
         INVALID_CARD: -1,
 
         // TODO: decide on a reasonable limit
-        cache: new LRUCache(3),
+        cache: new LRUCache(100),
 
         addCard: function(name, cardData) {
             this.cache.putItem(name, cardData);
