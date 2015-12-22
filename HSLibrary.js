@@ -19,6 +19,24 @@
 
     //TODO: consider loading all cards at once (comment autocomplete feature?)... maybe store data in local storage?
 
+
+    // TODO: use mutation observer to listen to inserted comments and do a new parse after..
+    var target = document.querySelector('.sitetable.nestedlisting');
+
+    // create an observer instance
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            console.log(mutation.type);
+        });
+    });
+
+// configuration of the observer:
+    var config = { childList: true, subtree: true };
+
+// pass in the target node, as well as the observer options
+    observer.observe(target, config);
+
+
 })(
     HSLParser,
     HSLServices,

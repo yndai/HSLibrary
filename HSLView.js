@@ -45,6 +45,7 @@ var HSLViews = (function HSLView(
         // references to the bound event handlers (for removal purposes)
         this._boundCardRequestMouseOutListener = this._cardRequestMouseOutListener.bind(this);
         this._boundCardRequestMouseOverListener = this._cardRequestMouseOverListener.bind(this);
+        this._boundMoreCommentsClickListener = this._moreCommentsClickListener.bind(this);
 
         // hook up model
         this.model.addListener(this);
@@ -62,6 +63,10 @@ var HSLViews = (function HSLView(
 
             // add comment nodes to model
             this.model.addCommentNodes(commentNodes);
+
+            // attach listeners to "more comments" so we know when to
+            // perform another search for card requests
+            this._addMoreCommentsListeners();
 
         },
 
@@ -82,6 +87,16 @@ var HSLViews = (function HSLView(
 
             // attach event listeners to request nodes
             this._addCardRequestListeners(cardRequestNodes);
+
+        },
+
+        _addMoreCommentsListeners: function() {
+            var self = this;
+            var moreCommentsLinks = document.querySelectorAll('.morecomments');
+
+            _.each(moreCommentsLinks, function(moreCommentsLink) {
+                moreCommentsLink.addEventListener('click', self._boundMoreCommentsClickListener);
+            });
 
         },
 
@@ -215,6 +230,16 @@ var HSLViews = (function HSLView(
                     self._removeCardImage();
                 }, 200);
             }
+        },
+
+        _moreCommentsClickListener: function(e) {
+
+            // parse comment section & wrap card requests
+            var commentNodes = this.parser.parse();
+
+            // add comment nodes to model
+            this.model.addCommentNodes(commentNodes);
+
         }
 
     });
