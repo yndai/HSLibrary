@@ -1,6 +1,9 @@
 'use strict';
 
-var HSLViews = (function HSLView(HSLCache) {
+var HSLViews = (function HSLView(
+    HSLCache,
+    HSLUtils
+) {
 
     var HTTP_PREFIX_REGEX = /^http:\/\//i;
 
@@ -12,12 +15,6 @@ var HSLViews = (function HSLView(HSLCache) {
 
     };
     _.extend(BaseListenerView.prototype, {
-
-        /**
-         * Initialize view in DOM (STUB)
-         */
-        init: function() {
-        },
 
         /**
          * Called by model to update view (STUB)
@@ -148,8 +145,8 @@ var HSLViews = (function HSLView(HSLCache) {
 
         _cardRequestMouseOverListener: function(e) {
             var self = this;
-            var cardRequestSpan = e.target;
-            var cardName = cardRequestSpan.getAttribute('data-card');
+            var cardRequestNode = e.target;
+            var cardName = cardRequestNode.getAttribute('data-card');
             // TODO: adjust coordinates based on amount of room to the left/right, etc
             var eventCoords = [e.pageX, e.pageY];
 
@@ -162,7 +159,7 @@ var HSLViews = (function HSLView(HSLCache) {
                 // card is invalid e.g. name was written incorrectly
 
                 console.log('cached invalid card');
-                self._invalidateCardRequest(cardRequestSpan);
+                self._invalidateCardRequest(cardRequestNode);
 
             } else if (cardData) {
                 // if cached card data is valid, just use that
@@ -173,7 +170,7 @@ var HSLViews = (function HSLView(HSLCache) {
 
             } else {
                 // otherwise, request card data
-                // TODO: exact name may be a bit hard... although it is case insensitive... disregard spaces??
+                // TODO: exact name may be a bit stiff... although it is case insensitive... disregard spaces??
                 self.service.querySingleCard(cardName)
                     .then(function(data) {
                         var cardList = JSON.parse(data);
@@ -183,8 +180,8 @@ var HSLViews = (function HSLView(HSLCache) {
                             cardData = cardList[0];
 
                             // replace card img url with https equivalent
-                            // TODO: reaally need this?
-                            cardData.img = cardData.img.replace(HTTP_PREFIX_REGEX, 'https://');
+                            // TODO: really need this?
+                            //cardData.img = cardData.img.replace(HTTP_PREFIX_REGEX, 'https://');
 
                             // cache card data
                             HSLCache.addCard(cardName, cardData);
@@ -204,7 +201,7 @@ var HSLViews = (function HSLView(HSLCache) {
                         // send another pointless request
                         HSLCache.addCard(cardName, HSLCache.INVALID_CARD);
 
-                        self._invalidateCardRequest(cardRequestSpan);
+                        self._invalidateCardRequest(cardRequestNode);
                     });
             }
 
@@ -227,4 +224,7 @@ var HSLViews = (function HSLView(HSLCache) {
         CommentsView : CommentsView
     };
 
-})(HSLCache);
+})(
+    HSLCache,
+    HSLUtils
+);

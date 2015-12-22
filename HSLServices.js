@@ -16,12 +16,8 @@ var HSLServices = (function(HSAPI) {
 
             return this._makeXHRGet(
                 this.URL_PREFIX + 'cards/' + name,
-                {
-                    'X-Mashape-Key': this.KEY
-                },
-                {
-                    'collectible': 1
-                }
+                {'X-Mashape-Key': this.KEY},
+                {'collectible': 1}
             );
 
         },
@@ -36,13 +32,8 @@ var HSLServices = (function(HSAPI) {
 
             return this._makeXHRGet(
                 this.URL_PREFIX + 'cards',
-                {
-                    'X-Mashape-Key': this.KEY
-                },
-                {
-                    'collectible': 1,
-                    'cost': 0
-                }
+                {'X-Mashape-Key': this.KEY},
+                {'collectible': 1, 'cost': 0}
             );
  
         },
@@ -100,9 +91,7 @@ var HSLServices = (function(HSAPI) {
 
 
     return {
-
         HSService: HSService
-
     };
 
 })(HSAPI);

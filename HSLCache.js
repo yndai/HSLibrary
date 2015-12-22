@@ -2,9 +2,7 @@
 
 var HSLCache = (function() {
 
-    // TODO: write unit tests for this as a sanity check
-
-    // TODO: when cache is filled get error 'cannot set property older of null' TEST THIS SHIT
+    // TODO: write unit tests for this
 
     /**
      * Doubly linked cache node
@@ -185,30 +183,25 @@ var HSLCache = (function() {
 
     /* ---------- Card data cache ---------- */
 
-    var CardDataCache = {
+    var INVALID_CARD = -1;
 
-        // placeholder for invalid cards placed in cache
-        INVALID_CARD: -1,
+    // TODO: decide on a reasonable limit
+    var cardDataCache = new LRUCache(100);
 
-        // TODO: decide on a reasonable limit
-        cache: new LRUCache(100),
+    function addCard(name, cardData) {
+        cardDataCache.putItem(name, cardData);
+    }
 
-        addCard: function(name, cardData) {
-            this.cache.putItem(name, cardData);
-        },
-
-        getCard: function(name) {
-            return this.cache.getItem(name);
-        }
-
-    };
+    function getCard(name) {
+        return cardDataCache.getItem(name);
+    }
 
 
     return {
 
-        INVALID_CARD: CardDataCache.INVALID_CARD,
-        addCard: CardDataCache.addCard.bind(CardDataCache),
-        getCard: CardDataCache.getCard.bind(CardDataCache)
+        INVALID_CARD: INVALID_CARD,
+        addCard: addCard,
+        getCard: getCard
 
     };
 

@@ -8,7 +8,7 @@ var HSLModels = (function() {
      * @constructor
      */
     var BaseListenableModel = function() {
-        this.listeners = [];
+        this._listeners = [];
     };
     _.extend(BaseListenableModel.prototype, {
 
@@ -18,8 +18,8 @@ var HSLModels = (function() {
          * @param listener
          */
         addListener: function(listener) {
-            if (!_.contains(this.listeners, listener)) {
-                this.listeners.push(listener);
+            if (!_.contains(this._listeners, listener)) {
+                this._listeners.push(listener);
             }
         },
 
@@ -29,7 +29,7 @@ var HSLModels = (function() {
          * @param listener
          */
         removeListener: function(listener) {
-            this.listeners = _.without(this.listeners, listener);
+            this._listeners = _.without(this._listeners, listener);
         },
 
         /**
@@ -38,7 +38,7 @@ var HSLModels = (function() {
          * @param data
          */
         notify: function(event, data) {
-            _.each(this.listeners, function(listener) {
+            _.each(this._listeners, function(listener) {
                 listener.update(event,data);
             })
         }
@@ -81,7 +81,6 @@ var HSLModels = (function() {
     var HSLOptionsModel = function() {
         BaseListenableModel.apply(this, arguments);
 
-
     };
     _.extend(HSLOptionsModel.prototype, BaseListenableModel.prototype, {
 
@@ -90,10 +89,8 @@ var HSLModels = (function() {
 
 
     return {
-
         CommentsModel: CommentsModel,
         HSLOptionsModel: HSLOptionsModel
-
     };
 
 })();

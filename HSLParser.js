@@ -104,7 +104,7 @@ var HSLParser = (function() {
                                     return trimmedName;
                                 } else {
                                     // TODO: maybe factor this out and make it a link to the picture?
-                                    return "<span class=\"hsl-card-request\" data-card=\"" + trimmedName + "\">" +
+                                    return "<span href='' class=\"hsl-card-request\" data-card=\"" + trimmedName + "\">" +
                                                 trimmedName +
                                             "</span>";
                                 }
@@ -167,10 +167,8 @@ var HSLParser = (function() {
     });
 
     return {
-
         CommentNode : CommentNode,
         CommentParser : CommentParser
-
     };
 
 })();
