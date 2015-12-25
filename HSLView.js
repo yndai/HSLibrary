@@ -233,12 +233,14 @@ var HSLViews = (function HSLView(
         },
 
         _moreCommentsClickListener: function(e) {
+            var self = this;
+            setTimeout(function() {
+                // parse comment section & wrap card requests
+                var commentNodes = self.parser.parse();
 
-            // parse comment section & wrap card requests
-            var commentNodes = this.parser.parse();
-
-            // add comment nodes to model
-            this.model.addCommentNodes(commentNodes);
+                // add comment nodes to model
+                self.model.addCommentNodes(commentNodes);
+            }, 1000);
 
         }
 

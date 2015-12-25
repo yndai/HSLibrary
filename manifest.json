@@ -2,8 +2,13 @@
   "name": "Hearthstone Library",
   "description": "Enhance r/hearthstone",
   "version": "0.1",
+  "browser_action": {
+    "default_popup": "options.html",
+    "default_title": "HSLib Options"
+  },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "https://ajax.googleapis.com/"
   ],
   "content_scripts": [
     {
