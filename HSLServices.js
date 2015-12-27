@@ -15,7 +15,7 @@ var HSLServices = (function(HSAPI) {
         querySingleCard: function(name) {
 
             return this._makeXHRGet(
-                this.URL_PREFIX + 'cards/' + name,
+                this.URL_PREFIX + 'cards/search/' + name,
                 {'X-Mashape-Key': this.KEY},
                 {'collectible': 1}
             );
@@ -38,6 +38,7 @@ var HSLServices = (function(HSAPI) {
  
         },
 
+        // TODO: if need other services, consider moving this to a base class
         /**
          * Initiates a Get XHR and returns a promise
          * @param url
@@ -51,9 +52,9 @@ var HSLServices = (function(HSAPI) {
             var defer = Q.defer();
             var xhr = new XMLHttpRequest();
             var params = '';
+            var firstData = true;
 
             // construct parameter string
-            var firstData = true;
             _.each(data, function(val, key) {
                 if (firstData) {
                     params += '?';

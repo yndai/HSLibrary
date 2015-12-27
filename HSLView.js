@@ -1,11 +1,12 @@
 'use strict';
 
 var HSLViews = (function HSLView(
-    HSLCache,
-    HSLUtils
+    HSLCache
 ) {
 
     var HTTP_PREFIX_REGEX = /^http:\/\//i;
+
+    var CARD_POPUP_TIMEOUT_MS = 300;
 
     var BaseListenerView = function(model) {
 
@@ -42,10 +43,12 @@ var HSLViews = (function HSLView(
         // timeout for removing the card popup
         this._popupTimeout = null;
 
+        // mutation observer to listen to newly added comment nodes
+        this._newCommentObserver = null;
+
         // references to the bound event handlers (for removal purposes)
         this._boundCardRequestMouseOutListener = this._cardRequestMouseOutListener.bind(this);
         this._boundCardRequestMouseOverListener = this._cardRequestMouseOverListener.bind(this);
-        this._boundMoreCommentsClickListener = this._moreCommentsClickListener.bind(this);
 
         // hook up model
         this.model.addListener(this);
@@ -58,15 +61,15 @@ var HSLViews = (function HSLView(
          */
         init: function() {
 
-            // parse comment section & wrap card requests
-            var commentNodes = this.parser.parse();
+            // parse entire comment section & wrap card requests
+            var commentNodes = this.parser.parseAll();
 
             // add comment nodes to model
             this.model.addCommentNodes(commentNodes);
 
-            // attach listeners to "more comments" so we know when to
-            // perform another search for card requests
-            this._addMoreCommentsListeners();
+            // attach listener to trigger when new comment nodes are added so we
+            // can update the model at that time
+            this._addNewCommentListener();
 
         },
 
@@ -90,16 +93,6 @@ var HSLViews = (function HSLView(
 
         },
 
-        _addMoreCommentsListeners: function() {
-            var self = this;
-            var moreCommentsLinks = document.querySelectorAll('.morecomments');
-
-            _.each(moreCommentsLinks, function(moreCommentsLink) {
-                moreCommentsLink.addEventListener('click', self._boundMoreCommentsClickListener);
-            });
-
-        },
-
         _addCardRequestListeners: function(cardRequestNodes) {
             var self = this;
 
@@ -112,7 +105,36 @@ var HSLViews = (function HSLView(
 
         },
 
+        _addNewCommentListener: function() {
+            var self = this;
+
+            self._newCommentObserver = new MutationObserver(function(mutations) {
+                _.each(mutations, function(mutation) {
+                    _.each(mutation.addedNodes, function(addedNode) {
+                        // ignore text nodes and etc
+                        if (addedNode.nodeType === Node.ELEMENT_NODE) {
+                            // parse new nodes for comments containing card requests
+                            var commentNodes = self.parser.parseNode(addedNode);
+                            if (commentNodes.length > 0) {
+                                self.model.addCommentNodes(commentNodes);
+                            }
+                        }
+                    });
+                });
+            });
+
+            // attach mutation listener to comments node to listen to
+            // added nodes
+            var commentsNode = document.querySelector('.commentarea');
+            self._newCommentObserver.observe(commentsNode, {
+                childList: true,
+                subtree: true
+            });
+
+        },
+
         _showCardImageAtPosition: function(url, x, y) {
+            var self = this;
 
             // remove popup if it is still visible
             this._removeCardImage();
@@ -126,9 +148,24 @@ var HSLViews = (function HSLView(
             div.style.top = y + 'px';
             img.src = url;
 
-            //TODO: scale with browser size
+            //TODO: scale with browser size?
             img.style.width = "70%";
             img.style.height = "70%";
+
+            // attach event listeners
+            div.addEventListener('mouseover', function() {
+                // if user hovers over card, cancel removal timeout
+                if (self._popupTimeout) {
+                    clearTimeout(self._popupTimeout);
+                    self._popupTimeout = null;
+                }
+            });
+            div.addEventListener('mouseout', function() {
+                // remove card on mouse exit
+                self._popupTimeout = setTimeout(function () {
+                    self._removeCardImage();
+                }, CARD_POPUP_TIMEOUT_MS);
+            });
 
             this._cardPopupDiv = div;
 
@@ -162,8 +199,14 @@ var HSLViews = (function HSLView(
             var self = this;
             var cardRequestNode = e.target;
             var cardName = cardRequestNode.getAttribute('data-card');
-            // TODO: adjust coordinates based on amount of room to the left/right, etc
             var eventCoords = [e.pageX, e.pageY];
+
+            // TODO: how to get card img height??
+            // TODO: adjust for right side cutoff??
+            var popupVerticalCutOff = e.clientY + 330 - document.documentElement.clientHeight;
+            if (popupVerticalCutOff > 0) {
+                eventCoords = [e.pageX, e.pageY - popupVerticalCutOff];
+            }
 
             // immediately remove existing card popup
             self._removeCardImage();
@@ -194,9 +237,9 @@ var HSLViews = (function HSLView(
                             // we take the first card as the best match
                             cardData = cardList[0];
 
-                            // replace card img url with https equivalent
+                            // replace card img url with https equivalent to avoid Mixed Content warnings
                             // TODO: really need this?
-                            //cardData.img = cardData.img.replace(HTTP_PREFIX_REGEX, 'https://');
+                            cardData.img = cardData.img.replace(HTTP_PREFIX_REGEX, 'https://');
 
                             // cache card data
                             HSLCache.addCard(cardName, cardData);
@@ -228,20 +271,8 @@ var HSLViews = (function HSLView(
             if (self._cardPopupDiv) {
                 self._popupTimeout = setTimeout(function () {
                     self._removeCardImage();
-                }, 200);
+                }, CARD_POPUP_TIMEOUT_MS);
             }
-        },
-
-        _moreCommentsClickListener: function(e) {
-            var self = this;
-            setTimeout(function() {
-                // parse comment section & wrap card requests
-                var commentNodes = self.parser.parse();
-
-                // add comment nodes to model
-                self.model.addCommentNodes(commentNodes);
-            }, 1000);
-
         }
 
     });
@@ -252,6 +283,5 @@ var HSLViews = (function HSLView(
     };
 
 })(
-    HSLCache,
-    HSLUtils
+    HSLCache
 );

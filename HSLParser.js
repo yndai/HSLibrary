@@ -43,6 +43,11 @@ var HSLParser = (function() {
             }
         }
 
+        // Note: regex given may have a global modifier
+        // and thus is stateful; need to reset the lastIndex in
+        // that case!
+        regex.lastIndex = 0;
+
         return matches;
     };
 
@@ -69,11 +74,21 @@ var HSLParser = (function() {
     _.extend(CommentParser.prototype, {
 
         /**
-         * Parse page for comment bodies with card requests
-         * @returns {Array}
+         * Parse whole page for comment bodies with card requests
+         * @returns {Array} - List of nodes that contains card requests
          */
-        parse: function() {
-            var commentNodeList = this._parseAndFilterComments();
+        parseAll: function() {
+            return this.parseNode(document.body);
+        },
+
+        /**
+         * Parse a node for comment bodies with card reqeusts
+         * @param {Element} node - root node to begin searching for card requests
+         * @returns {Array} - List of nodes that contains card requests
+         */
+        parseNode: function(node) {
+            var commentNodes = node.querySelectorAll(COMMENT_SELECTOR);
+            var commentNodeList = this._parseAndFilterComments(commentNodes);
             commentNodeList = this._wrapCardRequestsInDOM(commentNodeList);
             return commentNodeList;
         },
@@ -99,9 +114,8 @@ var HSLParser = (function() {
                                 var trimmedName = match.substr(2, match.length - 4);
 
                                 if (IGNORE_CARDS[trimmedName]) {
-                                    // we still want to trim the ignored card request so
-                                    // we don't catch it in a future parse
-                                    return trimmedName;
+                                    // TODO: maybe replace with the trimmed name so parser does not catch it again?
+                                    return match;
                                 } else {
                                     // TODO: maybe factor this out and make it a link to the picture?
                                     return "<span href='' class=\"hsl-card-request\" data-card=\"" + trimmedName + "\">" +
@@ -131,21 +145,19 @@ var HSLParser = (function() {
         },
 
         /**
-         * Parse the page for comment bodies & filter for comments with card requests;
-         * Store elements in commentNodeList
+         * Parse a node list for comment bodies & filter for comments with card requests
+         * @param {NodeList} nodeList
          * @returns {Array}
          * @private
          */
-        _parseAndFilterComments: function() {
+        _parseAndFilterComments: function(nodeList) {
 
             var commentNodeList = [];
 
-            var foundCommentNodes = document.querySelectorAll(COMMENT_SELECTOR);
-
-            if (foundCommentNodes.length > 0) {
+            if (nodeList && nodeList.length > 0) {
 
                 // filter out comments without card requests
-                _.each(foundCommentNodes, function(commentNode) {
+                _.each(nodeList, function(commentNode) {
 
                     var matches = _findMatches(commentNode.innerText, COMMENT_FILTER_REGEX, 1, true);
 

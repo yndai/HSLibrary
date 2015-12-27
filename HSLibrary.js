@@ -17,25 +17,7 @@
 
     commentsView.init();
 
-    //TODO: consider loading all cards at once (comment autocomplete feature?)... maybe store data in local storage?
-    // TODO: check for updates to data by checking against patch version number from API
-
-    // TODO: use mutation observer to listen to inserted comments and do a new parse after..
-    var target = document.querySelector('.morecomments');
-
-    // create an observer instance
-    var observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            console.log(mutation);
-        });
-    });
-
-// configuration of the observer:
-    var config = { childList: true, subtree: true };
-
-// pass in the target node, as well as the observer options
-    observer.observe(target, config);
-
+    //TODO: consider loading all cards at once (comment autocomplete feature?)... maybe store data in local storage? We can check for updates to data by checking against patch version number from API. This also means we can be smarter about card search...
 
 })(
     HSLParser,
