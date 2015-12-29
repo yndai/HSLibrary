@@ -6,7 +6,7 @@ var HSLViews = (function HSLView(
 
     var HTTP_PREFIX_REGEX = /^http:\/\//i;
 
-    var CARD_POPUP_TIMEOUT_MS = 300;
+    var CARD_POPUP_TIMEOUT_MS = 200;
 
     var BaseListenerView = function(model) {
 
@@ -143,14 +143,15 @@ var HSLViews = (function HSLView(
             var img = document.createElement('img');
 
             // TODO: consider compiling all ID's / Classnames in separate file
-            div.id = 'hsl-card-img';
+            div.id = 'hsl-card-img-container';
             div.style.left = x + 'px';
             div.style.top = y + 'px';
+            img.className = 'hsl-card-img';
             img.src = url;
 
             //TODO: scale with browser size?
-            img.style.width = "70%";
-            img.style.height = "70%";
+            //img.style.width = "70%";
+            //img.style.height = "70%";
 
             // attach event listeners
             div.addEventListener('mouseover', function() {
