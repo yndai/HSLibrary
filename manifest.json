@@ -19,6 +19,7 @@
         "vendor/q.js",
         "vendor/underscore.js",
         "api/HSAPI.js",
+        "test/card-names-full.js",
         "HSLUtils.js",
         "HSLCache.js",
         "HSLParser.js",

@@ -2,77 +2,108 @@
 
 var HSLUtils = (function() {
 
+
     /**
-     * Wraps XHR obj prototype to enable listening to XHR's
-     *
-     * Note: I wanted to listen to xhr's so we can parse newly added comments; this does not work since the content script's environment is isolated (except for the page DOM) and so we have no access to the xhr obj the main page uses...So, this is currently unused
+     * A simple implementation of a Trie data structure for
+     * searching of completions for word prefixes
+     * @constructor
      */
-    var XHREventsWrapper = function() {
+    var Trie = function() {
 
-        var listeners = [];
-
-        // adapted from http://stackoverflow.com/questions/4406606/can-jquery-listen-to-ajax-calls-from-other-javascript
-
-        var oldOpen = window.XMLHttpRequest.prototype.open,
-            oldSend = window.XMLHttpRequest.prototype.send;
-
-        var openReplacement = function(method, url, async, user, password) {
-            var syncMode = async !== false ? 'async' : 'sync';
-            console.log(
-                'Preparing ' +
-                syncMode +
-                ' HTTP request : ' +
-                method +
-                ' ' +
-                url
-            );
-            return oldOpen.apply(this, arguments);
-        };
-
-        var sendReplacement = function(data) {
-            console.warn('Sending HTTP request data : ', data);
-
-            // save prev. method
-            if(this.onreadystatechange) {
-                this._onreadystatechange = this.onreadystatechange;
-            }
-            this.onreadystatechange = onReadyStateChangeReplacement;
-
-            return oldSend.apply(this, arguments);
-        };
-
-        var onReadyStateChangeReplacement = function() {
-            console.warn('HTTP request ready state changed : ' + this.readyState);
-            if(this._onreadystatechange) {
-                return this._onreadystatechange.apply(this, arguments);
-            }
-        };
-
-        window.XMLHttpRequest.prototype.open = openReplacement;
-        window.XMLHttpRequest.prototype.send = sendReplacement;
-
-        // ---------- //
-
-        function addListener(listener) {
-            if (!_.contains(listeners, listener)) {
-                listeners.push(listener);
-            }
-        }
-
-        function removeListener(listener) {
-            listeners = _.without(listeners, listener);
-        }
-
-        return {
-            addListener: addListener,
-            removeListener: removeListener
-        };
+        this._root = null;
 
     };
+    _.extend(Trie.prototype, {
+
+        init: function(wordList) {
+
+            this._root = {};
+
+            for (var i = 0; i < wordList.length; i++) {
+                this.addWordToTrie(wordList[i]);
+            }
+
+        },
+
+        addWordToTrie: function(word) {
+            var letters = word.toLowerCase().split('');
+            var currNode = this._root;
+
+            for (var i = 0; i < letters.length; i++) {
+                var letter = letters[i];
+                var isEnd = (i === letters.length - 1);
+
+                if (currNode[letter]) {
+                    // continue traversal
+                    currNode = currNode[letter];
+                    if (isEnd) {
+                        currNode._end = true;
+                    }
+                } else {
+                    // node does not exist yet
+                    if (isEnd) {
+                        currNode[letter] = { _end: true };
+                    } else {
+                        currNode[letter] = {};
+                    }
+                    currNode = currNode[letter];
+                }
+
+            }
+        },
+
+        // TODO: find a way to optimize this? maybe cache completions at nodes?
+        findCompletions: function(partial) {
+            var currNode = this._root;
+            var letters = partial.toLowerCase().split('');
+            var completions = [];
+
+            // traverse to end of partial
+            for (var i = 0; i < letters.length; i++) {
+                var letter = letters[i];
+                currNode = currNode[letter];
+                if (!currNode) {
+                    return [];
+                }
+            }
+
+            this._findWords(currNode, completions, partial.toLowerCase());
+
+            return completions;
+        },
+
+        _findWordsIterative: function(node, foundWords, partial) {
+
+            var curNode = node;
+            var strStack = [];
+
+            // TODO: look into an interative traveral
+
+        },
+
+        _findWords: function(node, foundWords, partial) {
+
+            if (node._end) {
+                foundWords.push(partial);
+            }
+
+            for (var child in node) {
+                if (node.hasOwnProperty(child) && child !== '_end') {
+                    this._findWords(node[child], foundWords, partial + child);
+                }
+            }
+
+        }
+
+    });
+
+
+
+
 
 
     return {
-
+        Trie: Trie
     };
 
 })();
