@@ -1,0 +1,67 @@
+
+.hsl-card-request {
+    font-size: 130%;
+    color: limegreen;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.hsl-card-request-invalid {
+    color: darkred;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#hsl-card-img-container {
+    position: absolute;
+    max-width: 250px;
+    max-height: 340px;
+    z-index: 100;
+}
+.hsl-card-img {
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+    margin-top: -40px;
+}
+
+#hsl-card-load {
+    position: absolute;
+    margin: 10px;
+    z-index: 100;
+}
+
+#hsl-auto-complete-container {
+    position: absolute;
+    width: 200px;
+    min-height: 30px;
+    max-height: 200px;
+    overflow: scroll;
+    z-index: 100;
+    box-shadow: 2px 2px 5px 0 gray;
+    border-radius: 4px;
+}
+.hsl-auto-complete {
+    width: 200px;
+    display: block;
+    list-style-type: none;
+    border: 1px solid #cccccc;
+    border-top: none;
+    font: 13px Helvetica Neue, Arial, Helvetica, sans-serif;
+}
+.hsl-auto-complete li {
+    display: block;
+    list-style-type: none;
+    padding: 8px;
+    margin: 0;
+    background: #ffffff;
+}
+.hsl-auto-complete li:nth-child(even) {
+    background: #dff5bd;
+}
+.hsl-auto-complete li:last-child {
+    border-radius: 0 0 3px 3px;
+}
+.hsl-auto-complete li:hover {
+    background: #cccccc;
+    cursor: pointer;
+}

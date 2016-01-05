@@ -160,17 +160,12 @@ var HSLParser = (function() {
                 _.each(nodeList, function(commentNode) {
 
                     var matches = _findMatches(commentNode.innerText, COMMENT_FILTER_REGEX, 1, true);
-
                     if (matches.length > 0) {
 
                         //console.log(commentNode.innerText + " %% " + JSON.stringify(matches));
-
                         commentNodeList.push(new CommentNode(commentNode, matches, {}));
-
                     }
-
                 });
-
             }
 
             return commentNodeList;

@@ -29,10 +29,13 @@
         "HSLibrary.js"
       ],
       "css": [
-        "HSL.css"
+        "style/HSL.css"
       ],
       "run_at": "document_end"
     }
+  ],
+  "web_accessible_resources": [
+    "style/load.gif"
   ],
   "manifest_version": 2
 }

@@ -10,8 +10,11 @@ var HSLServices = (function(HSAPI) {
     };
     _.extend(HSService.prototype, {
 
-        // TODO: exact match? partial match?
-
+        /**
+         * Search for a card by name (partial match)
+         * @param name
+         * @returns {promise}
+         */
         querySingleCard: function(name) {
 
             return this._makeXHRGet(
@@ -24,11 +27,9 @@ var HSLServices = (function(HSAPI) {
 
         /**
          * Query all collectible cards (large size & slow)
-         * @returns promise
+         * @returns {promise}
          */
         queryAllCards: function() {
-
-            // TODO: may not need this method...
 
             return this._makeXHRGet(
                 this.URL_PREFIX + 'cards',
@@ -38,7 +39,7 @@ var HSLServices = (function(HSAPI) {
  
         },
 
-        // TODO: if need other services, consider moving this to a base class
+        // TODO: if need other services, move this to a base class
         /**
          * Initiates a Get XHR and returns a promise
          * @param url

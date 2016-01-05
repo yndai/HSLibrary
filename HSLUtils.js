@@ -2,22 +2,25 @@
 
 var HSLUtils = (function() {
 
+    /* ---------- TRIE ---------- */
 
     /**
      * A simple implementation of a Trie data structure for
-     * searching of completions for word prefixes
+     * searching completions for word prefixes
      * @constructor
      */
     var Trie = function() {
 
-        this._root = null;
+        this._root = {};
 
     };
     _.extend(Trie.prototype, {
 
+        /**
+         * Initialize trie with a list of strings
+         * @param wordList
+         */
         init: function(wordList) {
-
-            this._root = {};
 
             for (var i = 0; i < wordList.length; i++) {
                 this.addWordToTrie(wordList[i]);
@@ -25,7 +28,12 @@ var HSLUtils = (function() {
 
         },
 
+        /**
+         * Store a word in the tree ( will be converted to lower case )
+         * @param word
+         */
         addWordToTrie: function(word) {
+
             var letters = word.toLowerCase().split('');
             var currNode = this._root;
 
@@ -34,7 +42,7 @@ var HSLUtils = (function() {
                 var isEnd = (i === letters.length - 1);
 
                 if (currNode[letter]) {
-                    // continue traversal
+                    // node exists
                     currNode = currNode[letter];
                     if (isEnd) {
                         currNode._end = true;
@@ -53,6 +61,11 @@ var HSLUtils = (function() {
         },
 
         // TODO: find a way to optimize this? maybe cache completions at nodes?
+        /**
+         * Find all completions for a given prefix
+         * @param partial
+         * @returns {Array}
+         */
         findCompletions: function(partial) {
             var currNode = this._root;
             var letters = partial.toLowerCase().split('');
@@ -72,15 +85,14 @@ var HSLUtils = (function() {
             return completions;
         },
 
-        _findWordsIterative: function(node, foundWords, partial) {
-
-            var curNode = node;
-            var strStack = [];
-
-            // TODO: look into an interative traveral
-
-        },
-
+        /**
+         * Recursive traversal of Trie structure to find completions for a
+         * word
+         * @param node
+         * @param foundWords
+         * @param partial
+         * @private
+         */
         _findWords: function(node, foundWords, partial) {
 
             if (node._end) {
@@ -97,13 +109,35 @@ var HSLUtils = (function() {
 
     });
 
+    /* ---------- MISC ---------- */
 
+    /**
+     * Utility method for finding the absolute position
+     * of an element
+     * @param element
+     * @returns {Number[]}
+     */
+    var findAbsoluteOffset = function (element) {
+        var top = 0;
+        var left = 0;
 
+        // Need to traverse through parents to add up all offsets
+        // since each node only stores its relative offsets
+        // See http://www.quirksmode.org/js/findpos.html
+        if (element && element.offsetParent) {
+            do {
+                top += element.offsetTop;
+                left += element.offsetLeft;
+            } while(element = element.offsetParent);
+        }
 
-
+        return [left, top];
+    };
 
     return {
-        Trie: Trie
+        Trie: Trie,
+
+        findAbsoluteOffset: findAbsoluteOffset
     };
 
 })();

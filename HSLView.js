@@ -1,12 +1,15 @@
 'use strict';
 
 var HSLViews = (function HSLView(
-    HSLCache
+    cache,
+    utils
 ) {
 
     var HTTP_PREFIX_REGEX = /^http:\/\//i;
 
     var CARD_POPUP_TIMEOUT_MS = 200;
+
+    var LOAD_GIF_PATH = chrome.extension.getURL('style/load.gif');
 
     var BaseListenerView = function(model) {
 
@@ -43,6 +46,9 @@ var HSLViews = (function HSLView(
         // timeout for removing the card popup
         this._popupTimeout = null;
 
+        // card loading gif
+        this._cardLoadGif = null;
+
         // mutation observer to listen to newly added comment nodes
         this._newCommentObserver = null;
 
@@ -70,6 +76,10 @@ var HSLViews = (function HSLView(
             // attach listener to trigger when new comment nodes are added so we
             // can update the model at that time
             this._addNewCommentListener();
+
+            // attach listener to comment input box for auto-complete pop-up to trigger
+            // as user types a card request
+            this._addCommentTextAreaListener();
 
         },
 
@@ -105,6 +115,108 @@ var HSLViews = (function HSLView(
 
         },
 
+        _showAutoCompleteList: function(words, x, y, clickHandler) {
+
+            var self = this;
+
+            if (this._autoCompleteDiv) this._autoCompleteDiv.parentNode.removeChild(this._autoCompleteDiv);
+
+            var listDiv = document.createElement('div');
+            var list = document.createElement('ul');
+
+            listDiv.id = 'hsl-auto-complete-container';
+            listDiv.style.left = x + 'px';
+            listDiv.style.top = y + 'px';
+
+            list.className = 'hsl-auto-complete';
+
+            _.each(words, function(word) {
+
+                var wordItem = document.createElement('li');
+                wordItem.innerText = word;
+
+                if (clickHandler) {
+                    wordItem.addEventListener('click', function (e) {
+                        clickHandler(e.target.innerText);
+                    });
+                }
+
+                list.appendChild(wordItem);
+
+            });
+
+            listDiv.appendChild(list);
+
+            // attach event listeners
+            //div.addEventListener('mouseover', function() {
+            //    // if user hovers over card, cancel removal timeout
+            //    if (self._popupTimeout) {
+            //        clearTimeout(self._popupTimeout);
+            //        self._popupTimeout = null;
+            //    }
+            //});
+            //div.addEventListener('mouseout', function() {
+            //    // remove card on mouse exit
+            //    self._popupTimeout = setTimeout(function () {
+            //        self._removeCardImage();
+            //    }, CARD_POPUP_TIMEOUT_MS);
+            //});
+
+            this._autoCompleteDiv = listDiv;
+
+            document.body.appendChild(listDiv);
+
+        },
+
+        _addCommentTextAreaListener: function() {
+            var self = this;
+
+            var commentInput = document.querySelector('.usertext-edit textarea');
+
+            if (commentInput) {
+
+                // for tracking user comment state
+                var bracketPos = 0;
+                var textState = 0;
+
+                // trie containing card names
+                var trie = new utils.Trie();
+                // TODO: using test data for now ( a snapshot of all card names )
+                trie.init(HSLTestCardNamesFull);
+
+                commentInput.addEventListener('keyup', function (e) {
+                    var commentStr = e.target.value;
+                    if (commentStr.length < 2) {
+                        return;
+                    }
+                    var lastTwoChar = commentStr.substr(commentStr.length - 2);
+
+                    // TODO: need to be smarter, e.g. detect user has deleted the brackets, etc (listen to backspace??)
+                    if (textState === 0 && lastTwoChar === '[[') {
+                        textState = 1;
+                        bracketPos = commentStr.length;
+                    } else if (textState === 1 && lastTwoChar === ']]') {
+                        textState = 0;
+                        bracketPos = -1;
+                    } else if (textState === 1) {
+                        var cardRequest = commentStr.substr(bracketPos);
+                        if (cardRequest.length > 0) {
+                            var cardNames = trie.findCompletions(cardRequest);
+                            console.log(cardNames);
+                            var absPos = utils.findAbsoluteOffset(e.target);
+                            self._showAutoCompleteList(cardNames, absPos[0] + e.target.offsetWidth, absPos[1], function(text){
+                                e.target.value = commentStr.substr(0, bracketPos) + text;
+                            });
+                        }
+                    }
+                    console.log(textState);
+                });
+
+                // TODO: on blur, remove list
+            }
+
+        },
+
         _addNewCommentListener: function() {
             var self = this;
 
@@ -133,45 +245,88 @@ var HSLViews = (function HSLView(
 
         },
 
+        _toggleLoadGifAtPosition: function(show, x,y) {
+
+            var div;
+            var img;
+
+            if (this._cardLoadGif === null) {
+
+                div = document.createElement('div');
+                img = document.createElement('img');
+
+                img.src = LOAD_GIF_PATH;
+                div.id = 'hsl-card-load';
+                div.style.display = 'initial';
+
+                div.appendChild(img);
+                document.body.appendChild(div);
+
+                this._cardLoadGif = div;
+
+            } else {
+                div = this._cardLoadGif;
+            }
+
+            if (show) {
+                div.style.left = x + 'px';
+                div.style.top = y + 'px';
+                div.style.display = 'initial';
+            } else {
+                div.style.display = 'none';
+            }
+
+        },
+
         _showCardImageAtPosition: function(url, x, y) {
             var self = this;
+            var div;
+            var img;
 
-            // remove popup if it is still visible
-            this._removeCardImage();
+            // create popup
+            if (this._cardPopupDiv === null) {
+                self._removeCardImage();
 
-            var div = document.createElement('div');
-            var img = document.createElement('img');
+                div = document.createElement('div');
+                img = document.createElement('img');
 
-            // TODO: consider compiling all ID's / Classnames in separate file
-            div.id = 'hsl-card-img-container';
+                // TODO: consider compiling all ID's / Classnames in separate file
+                div.id = 'hsl-card-img-container';
+                img.className = 'hsl-card-img';
+
+                //TODO: scale img with viewport size?
+
+                // attach event listeners
+                div.addEventListener('mouseover', function() {
+                    // if user hovers over card, cancel removal timeout
+                    if (self._popupTimeout) {
+                        clearTimeout(self._popupTimeout);
+                        self._popupTimeout = null;
+                    }
+                });
+                div.addEventListener('mouseout', function() {
+                    // remove card on mouse exit
+                    self._popupTimeout = setTimeout(function () {
+                        self._removeCardImage();
+                    }, CARD_POPUP_TIMEOUT_MS);
+                });
+
+                this._cardPopupDiv = div;
+
+                div.appendChild(img);
+                document.body.appendChild(div);
+
+            } else {
+
+                div = this._cardPopupDiv;
+                img = div.querySelector('.hsl-card-img');
+
+            }
+
             div.style.left = x + 'px';
             div.style.top = y + 'px';
-            img.className = 'hsl-card-img';
             img.src = url;
-
-            //TODO: scale with browser size?
-            //img.style.width = "70%";
-            //img.style.height = "70%";
-
-            // attach event listeners
-            div.addEventListener('mouseover', function() {
-                // if user hovers over card, cancel removal timeout
-                if (self._popupTimeout) {
-                    clearTimeout(self._popupTimeout);
-                    self._popupTimeout = null;
-                }
-            });
-            div.addEventListener('mouseout', function() {
-                // remove card on mouse exit
-                self._popupTimeout = setTimeout(function () {
-                    self._removeCardImage();
-                }, CARD_POPUP_TIMEOUT_MS);
-            });
-
-            this._cardPopupDiv = div;
-
-            div.appendChild(img);
-            document.body.appendChild(div);
+            div.style.display = 'initial';
 
         },
 
@@ -179,8 +334,7 @@ var HSLViews = (function HSLView(
             if (this._cardPopupDiv) {
                 clearTimeout(this._popupTimeout);
                 this._popupTimeout = null;
-                this._cardPopupDiv.parentNode.removeChild(this._cardPopupDiv);
-                this._cardPopupDiv = null;
+                this._cardPopupDiv.style.display = 'none';
             }
         },
 
@@ -197,6 +351,7 @@ var HSLViews = (function HSLView(
         },
 
         _cardRequestMouseOverListener: function(e) {
+
             var self = this;
             var cardRequestNode = e.target;
             var cardName = cardRequestNode.getAttribute('data-card');
@@ -212,9 +367,9 @@ var HSLViews = (function HSLView(
             // immediately remove existing card popup
             self._removeCardImage();
 
-            var cardData = HSLCache.getCard(cardName);
+            var cardData = cache.getCard(cardName);
 
-            if (cardData === HSLCache.INVALID_CARD) {
+            if (cardData === cache.INVALID_CARD) {
                 // card is invalid e.g. name was written incorrectly
 
                 console.log('cached invalid card');
@@ -228,8 +383,11 @@ var HSLViews = (function HSLView(
                 self._showCardImageAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
 
             } else {
-                // otherwise, request card data
-                // TODO: exact name may be a bit stiff... although it is case insensitive... disregard spaces??
+
+                // show loading gif
+                self._toggleLoadGifAtPosition(true, e.pageX, e.pageY);
+
+                // request card data
                 self.service.querySingleCard(cardName)
                     .then(function(data) {
                         var cardList = JSON.parse(data);
@@ -239,11 +397,10 @@ var HSLViews = (function HSLView(
                             cardData = cardList[0];
 
                             // replace card img url with https equivalent to avoid Mixed Content warnings
-                            // TODO: really need this?
                             cardData.img = cardData.img.replace(HTTP_PREFIX_REGEX, 'https://');
 
                             // cache card data
-                            HSLCache.addCard(cardName, cardData);
+                            cache.addCard(cardName, cardData);
 
                             //console.log(data);
 
@@ -258,9 +415,13 @@ var HSLViews = (function HSLView(
                         console.log(error);
                         // probably an invalid card name, cache null so we don't
                         // send another pointless request
-                        HSLCache.addCard(cardName, HSLCache.INVALID_CARD);
+                        cache.addCard(cardName, cache.INVALID_CARD);
 
                         self._invalidateCardRequest(cardRequestNode);
+                    })
+                    .finally(function() {
+                        // remove loading gif
+                        self._toggleLoadGifAtPosition(false);
                     });
             }
 
@@ -284,5 +445,6 @@ var HSLViews = (function HSLView(
     };
 
 })(
-    HSLCache
+    HSLCache,
+    HSLUtils
 );
