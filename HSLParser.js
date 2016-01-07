@@ -114,11 +114,9 @@ var HSLParser = (function() {
                                 var trimmedName = match.substr(2, match.length - 4);
 
                                 if (IGNORE_CARDS[trimmedName]) {
-                                    // TODO: maybe replace with the trimmed name so parser does not catch it again?
                                     return match;
                                 } else {
-                                    // TODO: maybe factor this out and make it a link to the picture?
-                                    return "<span href='' class=\"hsl-card-request\" data-card=\"" + trimmedName + "\">" +
+                                    return "<span class=\"hsl-card-request\" data-card=\"" + trimmedName + "\">" +
                                                 trimmedName +
                                             "</span>";
                                 }

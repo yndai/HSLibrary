@@ -4,6 +4,8 @@ var HSLUtils = (function() {
 
     /* ---------- TRIE ---------- */
 
+    // TODO: write tests !!
+
     /**
      * A simple implementation of a Trie data structure for
      * searching completions for word prefixes
@@ -60,7 +62,7 @@ var HSLUtils = (function() {
             }
         },
 
-        // TODO: find a way to optimize this? maybe cache completions at nodes?
+        // TODO: maybe optimize this? maybe cache completions at nodes?
         /**
          * Find all completions for a given prefix
          * @param partial
@@ -117,7 +119,7 @@ var HSLUtils = (function() {
      * @param element
      * @returns {Number[]}
      */
-    var findAbsoluteOffset = function (element) {
+    var findAbsoluteOffset = function(element) {
         var top = 0;
         var left = 0;
 
@@ -134,10 +136,49 @@ var HSLUtils = (function() {
         return [left, top];
     };
 
+
+    var scrollIntoView = function(container, element) {
+        var scrollBottomDiff = (element.offsetTop + element.offsetHeight) - (container.scrollTop + container.offsetHeight);
+        var scrollTopDiff = element.offsetTop - container.scrollTop;
+        if (scrollBottomDiff > 0) {
+            container.scrollTop += scrollBottomDiff;
+        } else if (scrollTopDiff > 0) {
+            container.scrollTop += scrollTopDiff;
+        }
+    };
+
+    /**
+     * True if key pressed affects text in some way
+     * @param keycode
+     * @returns {boolean}
+     */
+    var isKeyPrintable = function(keycode) {
+        return keycode === 8 || // backspace
+            keycode === 32   || // spacebar
+            keycode === 13   || // return
+            isKeyCharacter(keycode);
+    };
+
+    /**
+     * True if key pressed actually prints a character
+     * @param keycode
+     * @returns {boolean}
+     */
+    var isKeyCharacter = function(keycode) {
+        return (keycode > 47 && keycode < 58) || // number keys
+            (keycode > 64 && keycode < 91)    || // letter keys
+            (keycode > 95 && keycode < 112)   || // numpad keys
+            (keycode > 185 && keycode < 193)  || // ;=,-./` (in order)
+            (keycode > 218 && keycode < 223);    // [\]' (in order)
+    };
+
     return {
         Trie: Trie,
 
-        findAbsoluteOffset: findAbsoluteOffset
+        findAbsoluteOffset: findAbsoluteOffset,
+        scrollElementIntoView: scrollIntoView,
+        isKeyPrintable: isKeyPrintable,
+        isKeyCharacter: isKeyCharacter
     };
 
 })();

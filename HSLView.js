@@ -11,6 +11,8 @@ var HSLViews = (function HSLView(
 
     var LOAD_GIF_PATH = chrome.extension.getURL('style/load.gif');
 
+
+
     var BaseListenerView = function(model) {
 
         this.model = model;
@@ -35,22 +37,29 @@ var HSLViews = (function HSLView(
     var CommentsView = function(model, parser, service) {
         BaseListenerView.apply(this, arguments);
 
-        // TODO: eventually store comment nodes in model & listen to comment section changes
-
         this.model = model;
         this.parser = parser;
         this.service = service;
 
-        // the card image popup (only 1 should exist)
+        /* ----- Card Popup state data ----- */
+        // the card image popup
         this._cardPopupDiv = null;
         // timeout for removing the card popup
         this._popupTimeout = null;
-
         // card loading gif
         this._cardLoadGif = null;
 
-        // auto-complete list
+        /* ----- Auto-Complete state data ----- */
+        // auto-complete list container
         this._autoCompleteDiv = null;
+        // current list of auto completions
+        this._autoCompleteListWords = [];
+        // current list of auto complete list elements
+        this._autoCompleteListItems = [];
+        // current index of selected auto completion item
+        this._autoCompleteListSelectedIndex = -1;
+        // trie containing card names
+        this._cardNameTrie = null;
 
         // mutation observer to listen to newly added comment nodes
         this._newCommentObserver = null;
@@ -82,7 +91,7 @@ var HSLViews = (function HSLView(
 
             // attach listener to comment input box for auto-complete pop-up to trigger
             // as user types a card request
-            this._addCommentTextAreaListener();
+            this._addCommentTextAreaListeners();
 
         },
 
@@ -101,7 +110,7 @@ var HSLViews = (function HSLView(
                 Array.prototype.push.apply(cardRequestNodes, _.values(commentNode.cardReqNodeMap));
             });
 
-            // attach event listeners to request nodes
+            // attach event listeners to card request nodes
             this._addCardRequestListeners(cardRequestNodes);
 
         },
@@ -119,12 +128,11 @@ var HSLViews = (function HSLView(
         },
 
         _toggleAutoCompleteListAtPosition: function(show, words, x, y, autoCompHandler) {
-
             var self = this;
             var listDiv;
             var list;
 
-            if (this._autoCompleteDiv === null) {
+            if (self._autoCompleteDiv === null) {
                 listDiv = document.createElement('div');
                 list = document.createElement('ul');
 
@@ -134,10 +142,43 @@ var HSLViews = (function HSLView(
                 listDiv.appendChild(list);
                 document.body.appendChild(listDiv);
 
-                this._autoCompleteDiv = listDiv;
+                document.body.addEventListener('keydown', function(e) {
+                    var listItems = self._autoCompleteListItems;
+                    if (show && listItems.length > 0) {
+                        var selectedInd = self._autoCompleteListSelectedIndex;
+                        switch (e.keyCode) {
+                            case 38: // up
+                                listItems[selectedInd].classList.remove('selected');
+                                selectedInd = Math.max(0, selectedInd - 1);
+                                //utils.scrollElementIntoView(listDiv, listItems[selectedInd]);
+                                listItems[selectedInd].classList.add('selected');
+                                self._autoCompleteListSelectedIndex = selectedInd;
+                                e.stopPropagation();
+                                e.preventDefault();
+                                break;
+                            case 40: // down
+                                listItems[selectedInd].classList.remove('selected');
+                                selectedInd = Math.min(selectedInd + 1, listItems.length - 1);
+                                //utils.scrollElementIntoView(listDiv, listItems[selectedInd]);
+                                listItems[selectedInd].classList.add('selected');
+                                self._autoCompleteListSelectedIndex = selectedInd;
+                                e.stopPropagation();
+                                e.preventDefault();
+                                break;
+                            case 13: // enter
+                                autoCompHandler(self._autoCompleteListWords[selectedInd]);
+                                listDiv.style.display = 'none';
+                                e.stopPropagation();
+                                e.preventDefault();
+                                break;
+                        }
+                    }
+                }, true);
+
+                self._autoCompleteDiv = listDiv;
 
             } else {
-                listDiv = this._autoCompleteDiv;
+                listDiv = self._autoCompleteDiv;
                 list = listDiv.querySelector('.hsl-auto-complete');
             }
 
@@ -147,6 +188,11 @@ var HSLViews = (function HSLView(
                 listDiv.style.left = x + 'px';
                 listDiv.style.top = y + 'px';
                 list.innerHTML = '';
+
+                // clear previous items
+                self._autoCompleteListItems = [];
+                self._autoCompleteListSelectedIndex = 0;
+                self._autoCompleteListWords = words;
 
                 // insert each word list item
                 _.each(words, function (word) {
@@ -158,14 +204,21 @@ var HSLViews = (function HSLView(
                     });
 
                     list.appendChild(wordItem);
+                    self._autoCompleteListItems.push(wordItem);
                 });
+
+                // mark first as selected initially
+                if (self._autoCompleteListItems.length > 0) {
+                    self._autoCompleteListItems[0].classList.add('selected');
+                }
+
             } else {
                 listDiv.style.display = 'none';
             }
 
         },
 
-        _addCommentTextAreaListener: function() {
+        _addCommentTextAreaListeners: function() {
             var self = this;
 
             var commentInput = document.querySelector('.usertext-edit textarea');
@@ -173,53 +226,77 @@ var HSLViews = (function HSLView(
                 return;
             }
 
-            // for tracking user comment state
-            var bracketPos = 0;
-            var textState = 0;
+            // create trie containing card names
+            self._cardNameTrie = new utils.Trie();
 
-            // trie containing card names
-            var trie = new utils.Trie();
             // TODO: using test data for now ( a snapshot of all card names )
-            trie.init(HSLTestCardNamesFull);
+            self._cardNameTrie.init(HSLTestCardNamesFull);
 
+            // get position of text area
             var commentInputPos = utils.findAbsoluteOffset(commentInput);
 
-            commentInput.addEventListener('keyup', function (e) {
+            // listen to user typing comment & show auto-complete when
+            // brackets are typed to start a card request
+            commentInput.addEventListener('keydown', function (e) {
+
+                // don't care about keys that do not affect text
+                if (!utils.isKeyPrintable(e.keyCode)) {
+                    return;
+                }
+
+                // get text up to text cursor
                 var commentStr = commentInput.value.substr(0, commentInput.selectionStart);
 
+                // if text is a character, append it to string up to cursor to get full string up to now
+                //if (utils.isKeyCharacter(e.keyCode)) {
+                //TODO: what does backspace convert to???
+                    commentStr += String.fromCharCode(e.keyCode);
+                //}
+
+                // impossible to have double brackets with less than 2 chars
                 if (commentStr.length < 2) {
                     return;
                 }
 
-                var lastTwoChar = commentStr.substr(commentStr.length - 2);
-
-                // TODO: need to be smarter, e.g. detect user has deleted the brackets, etc (listen to backspace??)
-                // TODO: find string up to caret... this is strange in chrome...
-                if (textState === 0 && lastTwoChar === '[[') {
-                    textState = 1;
-                    bracketPos = commentStr.length;
-                } else if (textState === 1 && lastTwoChar === ']]') {
-                    textState = 0;
-                    bracketPos = -1;
-                } else if (textState === 1) {
-                    var cardRequest = commentStr.substr(bracketPos);
-                    if (cardRequest.length > 0) {
-                        var cardNames = trie.findCompletions(cardRequest);
-                        //console.log(cardNames);
-                        self._toggleAutoCompleteListAtPosition(
-                            true,
-                            cardNames,
-                            commentInputPos[0] + commentInput.offsetWidth,
-                            commentInputPos[1],
-                            function(text) {
-                                commentInput.value = commentStr.substr(0, bracketPos) + text + ']]';
-                                textState = 0;
-                            });
-                    }
+                // if key is backspace, need to remove chars?? what about multi-char selection???
+                if (e.keyCode === 8) {
+                    commentStr = commentStr.substr(0, commentStr.length - 2);
                 }
-                console.log(textState);
-            });
 
+                var startBrackets = commentStr.lastIndexOf('[[');
+                var endBrackets = commentStr.lastIndexOf(']]');
+
+                if (endBrackets >= startBrackets) {
+                    // this means that the start brackets were closed or
+                    // they are both non-existent (== -1)
+                    // so nothing to do
+                    return;
+                }
+
+                // note: must add 2 to index since we need the string after the brackets
+                var cardRequest = commentStr.substr(startBrackets + 2);
+console.log(cardRequest);
+                if (cardRequest.length > 0) {
+
+                    var cardNames = self._cardNameTrie.findCompletions(cardRequest);
+                    //console.log(cardNames);
+
+                    self._toggleAutoCompleteListAtPosition(
+                        true,
+                        cardNames,
+                        commentInputPos[0] + commentInput.offsetWidth,
+                        commentInputPos[1],
+                        function(text) {
+                            // need to update values as they may have changed
+                            var commentStr2 = commentInput.value.substr(0, commentInput.selectionStart);
+                            var startBrackets2 = commentStr2.lastIndexOf('[[');
+                            commentInput.value = commentStr2.substr(0, startBrackets2 + 2) + text + ']]';
+                        });
+                }
+
+            }, true); // note: we use capture so that we can intercept key press from parent (body) see _toggleAutoCompleteListAtPosition
+
+            // remove auto-complete list when losing focus of text area
             commentInput.addEventListener('blur', function(e) {
                 setTimeout(function() {
                     self._toggleAutoCompleteListAtPosition(false);

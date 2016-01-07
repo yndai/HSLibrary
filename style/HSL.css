@@ -65,3 +65,7 @@
     background: #cccccc;
     cursor: pointer;
 }
+.hsl-auto-complete li.selected {
+    border: solid 2px lightgray;
+    border-radius: 3px;
+}
