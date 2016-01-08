@@ -34,12 +34,28 @@ var HSLViews = (function HSLView(
 
 
 
+    var AutoCompleteWidget = function() {
+
+    };
+    _.extend(AutoCompleteWidget.prototype, {
+
+    });
+
+    var ImagePopupWidget = function() {
+
+    };
+    _.extend(ImagePopupWidget.prototype, {
+
+    });
+
     var CommentsView = function(model, parser, service) {
         BaseListenerView.apply(this, arguments);
 
         this.model = model;
         this.parser = parser;
         this.service = service;
+
+        // TODO: refactor card popup and autocomplete into isolated Widgets!
 
         /* ----- Card Popup state data ----- */
         // the card image popup
@@ -275,7 +291,7 @@ var HSLViews = (function HSLView(
 
                 // note: must add 2 to index since we need the string after the brackets
                 var cardRequest = commentStr.substr(startBrackets + 2);
-console.log(cardRequest);
+//console.log(cardRequest);
                 if (cardRequest.length > 0) {
 
                     var cardNames = self._cardNameTrie.findCompletions(cardRequest);
