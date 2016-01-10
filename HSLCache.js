@@ -7,10 +7,20 @@ var HSLCache = (function(utils) {
     // TODO: decide on a reasonable limit
     var cardDataCache = new utils.LRUCache(100);
 
+    /**
+     * Store a card & card data
+     * @param name
+     * @param cardData
+     */
     function addCard(name, cardData) {
         cardDataCache.putItem(name, cardData);
     }
 
+    /**
+     * Get stored card data using card name
+     * @param name
+     * @returns
+     */
     function getCard(name) {
         return cardDataCache.getItem(name);
     }

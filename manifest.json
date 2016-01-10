@@ -16,8 +16,8 @@
         "https://www.reddit.com/r/hearthstone/comments/*"
       ],
       "js": [
-        "vendor/q.js",
-        "vendor/underscore.js",
+        "lib/q.js",
+        "lib/underscore.js",
         "api/HSAPI.js",
         "test/card-names-full.js",
         "HSLUtils.js",
