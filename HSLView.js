@@ -7,12 +7,17 @@ var HSLViews = (function HSLView(
 
     var HTTP_PREFIX_REGEX = /^http:\/\//i;
 
-    var CARD_POPUP_TIMEOUT_MS = 200;
+    var POPUP_TIMEOUT_MS = 200;
 
     var LOAD_GIF_PATH = chrome.extension.getURL('style/load.gif');
 
 
 
+    /**
+     * Base class for views that listen to a listenable model
+     * @param model
+     * @constructor
+     */
     var BaseListenerView = function(model) {
 
         this.model = model;
@@ -33,7 +38,10 @@ var HSLViews = (function HSLView(
     });
 
 
-
+    /**
+     *
+     * @constructor
+     */
     var AutoCompleteWidget = function() {
 
     };
@@ -41,13 +49,158 @@ var HSLViews = (function HSLView(
 
     });
 
+
+
+    /**
+     * A widget that can display an image popup at a specified location
+     * @constructor
+     */
     var ImagePopupWidget = function() {
+
+        // popup container
+        this._imagePopupDiv = null;
+
+        // popup image
+        this._popupImage = null;
+
+        // timeout for removing popup
+        this._popupTimeout = null;
+
+        // image loading gif
+        this._imageLoadGif = null;
 
     };
     _.extend(ImagePopupWidget.prototype, {
 
+        /**
+         * Toggle a loading spinner at a given position.
+         * If show is false, other arguments are ignored.
+         * @param {boolean} show
+         * @param {number} x
+         * @param {number} y
+         */
+        toggleLoadGifAtPosition: function(show, x, y) {
+
+            var self = this;
+            var div;
+            var img;
+
+            // init img if needed
+            if (self._imageLoadGif === null) {
+
+                div = document.createElement('div');
+                img = document.createElement('img');
+
+                img.src = LOAD_GIF_PATH;
+                div.className = 'hsl-img-load';
+                div.style.display = 'initial';
+
+                div.appendChild(img);
+                document.body.appendChild(div);
+
+                self._imageLoadGif = div;
+
+            } else {
+                div = self._imageLoadGif;
+            }
+
+            if (show) {
+                div.style.left = x + 'px';
+                div.style.top = y + 'px';
+                div.style.display = 'initial';
+            } else {
+                div.style.display = 'none';
+            }
+
+        },
+
+        /**
+         * Display an image popup at a given position from a given url.
+         * @param {string} url
+         * @param {number} x
+         * @param {number} y
+         */
+        showPopupAtPosition: function(url, x, y) {
+            var self = this;
+            var div;
+            var img;
+
+            // init popup if needed
+            if (self._imagePopupDiv === null) {
+
+                div = document.createElement('div');
+                img = document.createElement('img');
+
+                div.className = 'hsl-popup-img-container';
+                img.className = 'hsl-popup-img';
+
+                //TODO: scale img with viewport size?
+
+                // attach event listeners
+                div.addEventListener('mouseover', function() {
+                    // if user hovers over card, cancel removal timeout
+                    self._clearPopupTimeout();
+                });
+                div.addEventListener('mouseout', function() {
+                    // remove card on mouse exit
+                    self.hidePopup();
+                });
+
+                self._imagePopupDiv = div;
+                self._popupImage = img;
+
+                div.appendChild(img);
+                document.body.appendChild(div);
+
+            } else {
+
+                div = self._imagePopupDiv;
+                img = self._popupImage;
+
+            }
+
+            // make sure there are no removal timeouts
+            this._clearPopupTimeout();
+
+            div.style.left = x + 'px';
+            div.style.top = y + 'px';
+            img.src = url;
+            div.style.display = 'initial';
+
+        },
+
+        /**
+         * Hide image popup after a short timeout
+         */
+        hidePopup: function() {
+            var self = this;
+
+            if (self._imagePopupDiv) {
+                self._popupTimeout = setTimeout(function () {
+                    self._clearPopupTimeout();
+                    self._imagePopupDiv.style.display = 'none';
+                }, POPUP_TIMEOUT_MS);
+            }
+        },
+
+        /**
+         * Clear popup removal timeout
+         * @private
+         */
+        _clearPopupTimeout: function() {
+            clearTimeout(this._popupTimeout);
+            this._popupTimeout = null;
+        }
+
     });
 
+    /**
+     * Manages various controls within the comment section. Extends BaseListenerView.
+     * @param model
+     * @param parser
+     * @param service
+     * @constructor
+     */
     var CommentsView = function(model, parser, service) {
         BaseListenerView.apply(this, arguments);
 
@@ -57,13 +210,8 @@ var HSLViews = (function HSLView(
 
         // TODO: refactor card popup and autocomplete into isolated Widgets!
 
-        /* ----- Card Popup state data ----- */
-        // the card image popup
-        this._cardPopupDiv = null;
-        // timeout for removing the card popup
-        this._popupTimeout = null;
-        // card loading gif
-        this._cardLoadGif = null;
+        // for displaying card image popups
+        this._cardPopupWidget = new ImagePopupWidget();
 
         /* ----- Auto-Complete state data ----- */
         // auto-complete list container
@@ -119,11 +267,12 @@ var HSLViews = (function HSLView(
         update: function(event, data) {
             console.log(event);
 
-            // get a flat list of card request nodes that were
-            // inserted into the DOM by the parser
+            // get a flat list of card request nodes that were inserted into the DOM by the parser
             var cardRequestNodes = [];
             _.each(data, function(commentNode) {
-                Array.prototype.push.apply(cardRequestNodes, _.values(commentNode.cardReqNodeMap));
+                // since the map values are arrays, need to merge/flatten into single array
+                var mergedCardReqNodes = Array.prototype.concat.apply([], _.values(commentNode.cardReqNodeMap));
+                Array.prototype.push.apply(cardRequestNodes, mergedCardReqNodes);
             });
 
             // attach event listeners to card request nodes
@@ -349,99 +498,6 @@ var HSLViews = (function HSLView(
 
         },
 
-        _toggleLoadGifAtPosition: function(show, x,y) {
-
-            var div;
-            var img;
-
-            if (this._cardLoadGif === null) {
-
-                div = document.createElement('div');
-                img = document.createElement('img');
-
-                img.src = LOAD_GIF_PATH;
-                div.id = 'hsl-card-load';
-                div.style.display = 'initial';
-
-                div.appendChild(img);
-                document.body.appendChild(div);
-
-                this._cardLoadGif = div;
-
-            } else {
-                div = this._cardLoadGif;
-            }
-
-            if (show) {
-                div.style.left = x + 'px';
-                div.style.top = y + 'px';
-                div.style.display = 'initial';
-            } else {
-                div.style.display = 'none';
-            }
-
-        },
-
-        _showCardImageAtPosition: function(url, x, y) {
-            var self = this;
-            var div;
-            var img;
-
-            // create popup
-            if (this._cardPopupDiv === null) {
-                self._removeCardImage();
-
-                div = document.createElement('div');
-                img = document.createElement('img');
-
-                // TODO: consider compiling all ID's / Classnames in separate file
-                div.id = 'hsl-card-img-container';
-                img.className = 'hsl-card-img';
-
-                //TODO: scale img with viewport size?
-
-                // attach event listeners
-                div.addEventListener('mouseover', function() {
-                    // if user hovers over card, cancel removal timeout
-                    if (self._popupTimeout) {
-                        clearTimeout(self._popupTimeout);
-                        self._popupTimeout = null;
-                    }
-                });
-                div.addEventListener('mouseout', function() {
-                    // remove card on mouse exit
-                    self._popupTimeout = setTimeout(function () {
-                        self._removeCardImage();
-                    }, CARD_POPUP_TIMEOUT_MS);
-                });
-
-                this._cardPopupDiv = div;
-
-                div.appendChild(img);
-                document.body.appendChild(div);
-
-            } else {
-
-                div = this._cardPopupDiv;
-                img = div.querySelector('.hsl-card-img');
-
-            }
-
-            div.style.left = x + 'px';
-            div.style.top = y + 'px';
-            img.src = url;
-            div.style.display = 'initial';
-
-        },
-
-        _removeCardImage: function() {
-            if (this._cardPopupDiv) {
-                clearTimeout(this._popupTimeout);
-                this._popupTimeout = null;
-                this._cardPopupDiv.style.display = 'none';
-            }
-        },
-
         _invalidateCardRequest: function(cardRequestSpan) {
             // remove event listeners from invalid
             // card request wrapper & mark it as invalid
@@ -468,9 +524,6 @@ var HSLViews = (function HSLView(
                 eventCoords = [e.pageX, e.pageY - popupVerticalCutOff];
             }
 
-            // immediately remove existing card popup
-            self._removeCardImage();
-
             var cardData = cache.getCard(cardName);
 
             if (cardData === cache.INVALID_CARD) {
@@ -484,12 +537,12 @@ var HSLViews = (function HSLView(
 
                 console.log('from cache');
                 //console.log(cardData);
-                self._showCardImageAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
+                self._cardPopupWidget.showPopupAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
 
             } else {
 
                 // show loading gif
-                self._toggleLoadGifAtPosition(true, e.pageX, e.pageY);
+                self._cardPopupWidget.toggleLoadGifAtPosition(true, e.pageX, e.pageY);
 
                 // request card data
                 self.service.querySingleCard(cardName)
@@ -509,10 +562,10 @@ var HSLViews = (function HSLView(
                             //console.log(data);
 
                             // display card popup
-                            self._showCardImageAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
+                            self._cardPopupWidget.showPopupAtPosition(cardData.img, eventCoords[0], eventCoords[1]);
 
                         } else {
-
+                            // uh oh
                         }
                     })
                     .fail(function(error){
@@ -525,7 +578,7 @@ var HSLViews = (function HSLView(
                     })
                     .finally(function() {
                         // remove loading gif
-                        self._toggleLoadGifAtPosition(false);
+                        self._cardPopupWidget.toggleLoadGifAtPosition(false);
                     });
             }
 
@@ -534,11 +587,7 @@ var HSLViews = (function HSLView(
         _cardRequestMouseOutListener: function(e) {
             var self = this;
             // remove the floating card image after a short delay (if present)
-            if (self._cardPopupDiv) {
-                self._popupTimeout = setTimeout(function () {
-                    self._removeCardImage();
-                }, CARD_POPUP_TIMEOUT_MS);
-            }
+            self._cardPopupWidget.hidePopup();
         }
 
     });

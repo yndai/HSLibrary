@@ -55,7 +55,7 @@ var HSLParser = (function() {
      * A comment node with card requests
      * @param element        ( the node )
      * @param cardNames      ( list of card names requested )
-     * @param cardReqNodeMap ( map from card name to the card request node )
+     * @param cardReqNodeMap ( map from card name to the card request node ( multiple if 1 card is repeated ) )
      * @constructor
      */
     var CommentNode = function(element, cardNames, cardReqNodeMap) {
@@ -122,10 +122,16 @@ var HSLParser = (function() {
                                 }
                             });
 
-                        // save reference to new wrapped card requests
+                        // save references to new wrapped card requests
                         var wrappedReqNodes = commentNode.element.querySelectorAll('.hsl-card-request');
                         _.each(wrappedReqNodes, function(reqNode) {
-                            commentNode.cardReqNodeMap[reqNode.getAttribute('data-card')] = reqNode;
+                            var cardName = reqNode.getAttribute('data-card');
+                            if (commentNode.cardReqNodeMap[cardName]) {
+                                // more than 1 request for a card
+                                commentNode.cardReqNodeMap[cardName].push(reqNode);
+                            } else {
+                                commentNode.cardReqNodeMap[cardName] = [reqNode];
+                            }
                         });
                     }
                 });
