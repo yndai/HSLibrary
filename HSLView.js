@@ -462,6 +462,7 @@ var HSLViews = (function HSLView(
 
             // init card name auto complete for comment entry
             // TODO: using snapshot of card names list for now
+            // TODO: add this functionality to reply textboxes too
             this._cardAutocompleteWidget.init(document.querySelector('.usertext-edit textarea'), HSLTestCardNamesFull);
 
         },
