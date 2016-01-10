@@ -38,6 +38,7 @@ var HSLViews = (function HSLView(
     });
 
 
+
     /**
      * Auto-complete widget which can be attached to a text entry element
      * @constructor
@@ -81,7 +82,9 @@ var HSLViews = (function HSLView(
         },
 
         /**
-         * Toggle auto-complete selection list
+         * Toggle auto-complete selection list. If show is false,
+         * other parameters are ignored. AutoCompHandler called when an option
+         * is selected
          * @param show
          * @param words
          * @param x
@@ -104,9 +107,10 @@ var HSLViews = (function HSLView(
                 listDiv.appendChild(list);
                 document.body.appendChild(listDiv);
 
+                // enable use of arrow keys to navigate completions
                 document.body.addEventListener('keydown', function(e) {
                     var listItems = self._autoCompleteListItems;
-                    if (show && listItems.length > 0) {
+                    if (listDiv.style.display !== 'none' && listItems.length > 0) {
                         var selectedInd = self._autoCompleteListSelectedIndex;
 
                         if (e.keyCode === 38 || e.keyCode === 40) { // up or down
@@ -242,9 +246,9 @@ var HSLViews = (function HSLView(
                         commentInputPos[1],
                         function(text) {
                             // need to update values as they may have changed
-                            var commentStr2 = commentInput.value.substr(0, commentInput.selectionStart);
-                            var startBrackets2 = commentStr2.lastIndexOf('[[');
-                            commentInput.value = commentStr2.substr(0, startBrackets2 + 2) + text + ']]';
+                            commentStr = commentInput.value.substr(0, commentInput.selectionStart);
+                            startBrackets = commentStr.lastIndexOf('[[');
+                            commentInput.value = commentStr.substr(0, startBrackets + 2) + text + ']]';
                         });
                 }
 
@@ -257,7 +261,7 @@ var HSLViews = (function HSLView(
                 }, POPUP_TIMEOUT_MS);
             });
 
-        },
+        }
 
     });
 
@@ -405,6 +409,8 @@ var HSLViews = (function HSLView(
         }
 
     });
+
+
 
     /**
      * Manages various controls within the comment section. Extends BaseListenerView.
@@ -638,6 +644,7 @@ var HSLViews = (function HSLView(
         }
 
     });
+
 
 
     return {

@@ -18,8 +18,8 @@ var HSLParser = (function() {
      * Returns list of matched capture groups
      * @param string
      * @param regex
-     * @param index     ( index of the capture group; defaults to 1 )
-     * @param findFirst ( optional; if true, will return list with just the first match )
+     * @param index -index of the capture group; defaults to 1 )
+     * @param findFirst - optional; if true, will return list with just the first match )
      * @returns {Array}
      * @private
      */
@@ -53,9 +53,9 @@ var HSLParser = (function() {
 
     /**
      * A comment node with card requests
-     * @param element        ( the node )
-     * @param cardNames      ( list of card names requested )
-     * @param cardReqNodeMap ( map from card name to the card request node ( multiple if 1 card is repeated ) )
+     * @param element - the node
+     * @param cardNames - list of card names requested
+     * @param cardReqNodeMap - map from card name to the card request node(s)
      * @constructor
      */
     var CommentNode = function(element, cardNames, cardReqNodeMap) {
